@@ -1,0 +1,54 @@
+.env
+source/.env
+.tokens/
+
+# Python / virtualenv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Local editor / OS noise
+.DS_Store
+Thumbs.db
+PORTFOLIO_PLAN.md
+SCREENSHOT_PLAN.md
+resources/
+
+# Build / generated UI
+source/present_dashboard.html
+
+# Runtime state / logs / caches
+source/pipeline.log
+source/cache/
+source/__pycache__/
+source/feedback_summary.json
+feedback_log.json
+setup_log.txt
+
+# Local pipeline data and private review state
+source/jobs_raw.json
+source/jobs_scored.json
+source/pipeline_state.json
+source/apply_log.json
+source/feedback_log.json
+source/contacts.json
+source/contacts.csv
+source/knowledge_store.json
+
+# Generated application assets
+source/applications/
+Cover Letters/
+
+# Personal / private documents
+CVs/
+*.xlsx
+Zeugnis und Zertifikate.pdf
+Zeugnis und Zertifikate-k.pdf
+cv_generator/
+cv_generator/profile.json
+
+# Historical / local leftovers
+.old/

@@ -1,0 +1,46 @@
+[
+  {
+    "company": "Infineon",
+    "type": "infineon_portal",
+    "url": "https://jobs.infineon.com/careers?hl=de&start=0&pid=563808970053685&sort_by=timestamp",
+    "search_mode": "onsite_search",
+    "location": "Munich",
+    "priority": 1,
+    "status": "active",
+    "implemented": true,
+    "notes": ""
+  },
+  {
+    "company": "Siemens Energy",
+    "type": "siemens_energy_portal",
+    "url": "https://jobs.siemens-energy.com/de_DE/jobs/searchJobsGermany",
+    "search_mode": "onsite_search",
+    "location": "Munich",
+    "priority": 2,
+    "status": "active",
+    "implemented": true,
+    "notes": ""
+  },
+  {
+    "company": "SWM",
+    "type": "swm_portal",
+    "url": "https://www.swm.de/karriere/jobboerse",
+    "search_mode": "onsite_search",
+    "location": "Munich",
+    "priority": 3,
+    "status": "active",
+    "implemented": true,
+    "notes": ""
+  },
+  {
+    "company": "BMW Group",
+    "type": "bmw_portal",
+    "url": "https://jobs.bmwgroup.com/",
+    "search_mode": "onsite_search",
+    "location": "Munich",
+    "priority": 4,
+    "status": "active",
+    "implemented": true,
+    "notes": "BMW job portal via sitemap/detail pages"
+  }
+]
