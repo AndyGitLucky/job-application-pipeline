@@ -1,0 +1,65 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.45cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{xcolor}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.2em, itemsep=0.2em, topsep=0.2em}
+
+\begin{document}
+
+{\LARGE \textbf{ {{ name }} }} \\
+\vspace{2mm}
+{{ title }} \\
+{{ location }}{% if email %} $\cdot$ \href{mailto:{{ email }}}{ {{ email }} }{% endif %}{% if phone %} $\cdot$ {{ phone }}{% endif %} \\
+{% if linkedin %}\href{ {{ linkedin }} }{LinkedIn}{% endif %}{% if github %} $\cdot$ \href{ {{ github }} }{GitHub}{% endif %}{% if portfolio %} $\cdot$ \href{ {{ portfolio }} }{Portfolio}{% endif %}
+
+\vspace{2mm}
+\hrule
+\vspace{2mm}
+
+\textbf{Profile} \\
+{% for line in summary %}
+{{ line }}{% if not loop.last %} \\ {% endif %}
+{% endfor %}
+
+\vspace{2mm}
+\textbf{Skills} \\
+{{ skills|join(' $\\cdot$ ') }}
+
+\vspace{2mm}
+\textbf{Experience} \\
+{% for item in experience %}
+\textbf{ {{ item.role }} } --- {{ item.company }}{% if item.location %}, {{ item.location }}{% endif %} \\
+{{ item.start }} -- {{ item.end }}
+\begin{itemize}
+{% for bullet in item.selected_bullets %}
+  \item {{ bullet }}
+{% endfor %}
+\end{itemize}
+{% endfor %}
+
+\vspace{1mm}
+\textbf{Projects} \\
+{% for project in projects %}
+\textbf{ {{ project.name }} }{% if project.subtitle %} --- {{ project.subtitle }}{% endif %}{% if project.link %} (\href{ {{ project.link }} }{link}){% endif %} \\
+\begin{itemize}
+{% for bullet in project.selected_description %}
+  \item {{ bullet }}
+{% endfor %}
+\end{itemize}
+{% endfor %}
+
+\vspace{1mm}
+\textbf{Education} \\
+{% for edu in education %}
+\textbf{ {{ edu.degree }} } --- {{ edu.institution }}{% if edu.location %}, {{ edu.location }}{% endif %} \\
+{{ edu.start }} -- {{ edu.end }}
+{% if not loop.last %}\vspace{1mm}{% endif %}
+{% endfor %}
+
+\end{document}

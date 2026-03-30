@@ -1,0 +1,15 @@
+We are looking for a Machine Learning Engineer with a strong interest in medical AI and computer vision.
+
+Requirements:
+- Python
+- Deep learning
+- Computer vision
+- Experience with TensorFlow or PyTorch
+- Ability to work with image data pipelines
+- Strong analytical thinking
+- Experience documenting technical work clearly
+
+Nice to have:
+- Real-time inference
+- Healthcare or medical device context
+- Linux, Git, and experimentation workflows

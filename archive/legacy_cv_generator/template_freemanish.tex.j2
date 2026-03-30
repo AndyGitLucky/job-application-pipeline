@@ -1,0 +1,108 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\usepackage{ragged2e}
+\usepackage{mathpazo}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.05em, itemsep=0.18em, topsep=0.2em, parsep=0pt, partopsep=0pt}
+\definecolor{ink}{HTML}{1C2430}
+\definecolor{accent}{HTML}{155E75}
+\definecolor{muted}{HTML}{66727F}
+\definecolor{panel}{HTML}{F6F8FA}
+\definecolor{rulegray}{HTML}{DCE3E8}
+
+\begin{document}
+\color{ink}
+
+\begin{tabularx}{\linewidth}{@{}Xr@{}}
+{\fontsize{26}{29}\selectfont\bfseries {{ name }}} & {\small\href{ {{ linkedin }} }{LinkedIn} \textbar\ \href{ {{ github }} }{GitHub} \textbar\ \href{ {{ portfolio }} }{Portfolio}} \\
+{\large\color{accent} {{ title }}} & {\small {{ location }} \textbar\ \href{mailto:{{ email }}}{ {{ email }} } \textbar\ {{ phone }}} \\
+\end{tabularx}
+
+\vspace{0.55em}
+{\color{accent}\rule{\linewidth}{1.2pt}}
+\vspace{0.55em}
+
+\noindent
+\begin{minipage}[t]{0.28\textwidth}
+\RaggedRight
+\colorbox{panel}{
+\parbox[t]{0.93\linewidth}{
+\vspace{0.3em}
+{\color{accent}\bfseries\MakeUppercase{Profile}}\par{\color{rulegray}\rule{\linewidth}{0.8pt}}\vspace{0.28em}
+{\small
+{% for line in summary %}
+{{ line }}{% if not loop.last %}\par\vspace{0.45em}{% endif %}
+{% endfor %}
+}
+
+{\vspace{0.55em}\color{accent}\bfseries\MakeUppercase{Skills}}\par{\color{rulegray}\rule{\linewidth}{0.8pt}}\vspace{0.28em}
+{\small
+{% for skill in skills %}
+\textbf{\color{accent}+}\enspace {{ skill }}{% if not loop.last %}\par{% endif %}
+{% endfor %}
+}
+
+{\vspace{0.55em}\color{accent}\bfseries\MakeUppercase{Languages}}\par{\color{rulegray}\rule{\linewidth}{0.8pt}}\vspace{0.28em}
+{\small
+{% for language in languages %}
+\textbf{ {{ language.name }} }\par
+{\small\color{muted} {{ language.level }}}{% if not loop.last %}\par\vspace{0.28em}{% endif %}
+{% endfor %}
+}
+
+{\vspace{0.55em}\color{accent}\bfseries\MakeUppercase{Education}}\par{\color{rulegray}\rule{\linewidth}{0.8pt}}\vspace{0.28em}
+{\small
+{% for edu in education %}
+\textbf{ {{ edu.display_degree if edu.display_degree is defined else edu.degree }} }\par
+{\small\color{muted} {{ edu.institution }}}\par
+{\small\color{muted} {{ edu.start }} -- {{ edu.end }}}{% if not loop.last %}\par\vspace{0.55em}{% endif %}
+{% endfor %}
+}
+\vspace{0.2em}
+}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.68\textwidth}
+\RaggedRight
+{\color{accent}\bfseries\MakeUppercase{Experience}}\par{\color{rulegray}\rule{\linewidth}{0.8pt}}\vspace{0.28em}
+{% for item in experience %}
+\begin{tabularx}{\linewidth}{@{}Xr@{}}
+\textbf{ {{ item.display_role if item.display_role is defined else item.role }} } & {\small\color{muted} {{ item.start }} -- {{ item.end }}} \\
+\multicolumn{2}{@{}l@{}}{\color{accent}\small {{ item.company }}{% if item.location %} \textbar\ {{ item.location }}{% endif %}}
+\end{tabularx}
+\vspace{-0.2em}
+\begin{itemize}
+{% for bullet in item.selected_bullets %}
+  \item {\small {{ bullet }}}
+{% endfor %}
+\end{itemize}
+\vspace{0.05em}
+{% endfor %}
+
+{\vspace{0.55em}\color{accent}\bfseries\MakeUppercase{Selected Projects}}\par{\color{rulegray}\rule{\linewidth}{0.8pt}}\vspace{0.28em}
+{% for project in projects %}
+\begin{tabularx}{\linewidth}{@{}Xr@{}}
+\textbf{ {{ project.name }} } & {% if project.link %}\small\href{ {{ project.link }} }{project link}{% endif %} \\
+\multicolumn{2}{@{}l@{}}{\small\color{muted} {{ project.subtitle }}}
+\end{tabularx}
+\vspace{-0.2em}
+\begin{itemize}
+{% for bullet in project.selected_description %}
+  \item {\small {{ bullet }}}
+{% endfor %}
+\end{itemize}
+{\small\color{muted}\textbf{Stack:} {{ project.tech|join(' | ') }}}\par
+\vspace{0.15em}
+{% endfor %}
+\end{minipage}
+
+\end{document}

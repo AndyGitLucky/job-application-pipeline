@@ -41,6 +41,7 @@ CONFIG = {
     "min_score": 6,
     "request_delay": 0.5,
     "filter_degree_required": False,
+    "explore_new_job_limit": 20,
 }
 
 CANDIDATE_PROFILE = PROFILE_TEXT
@@ -149,9 +150,18 @@ def score_job(job: dict) -> dict:
         }
 
 
-def score_jobs(input_file: str | None = None, output_file: str | None = None) -> list:
+def score_jobs(
+    input_file: str | None = None,
+    output_file: str | None = None,
+    *,
+    search_mode: str = "normal",
+    explore_new_job_limit: int | None = None,
+) -> list:
     input_path = resolve_runtime_path(input_file or CONFIG["input_file"])
     output_path = resolve_runtime_path(output_file or CONFIG["output_file"])
+    mode = str(search_mode or "normal").strip().lower()
+    if mode not in {"normal", "explore"}:
+        mode = "normal"
 
     if not input_path.exists():
         log.error("Input-Datei nicht gefunden: %s", input_path)
@@ -191,13 +201,31 @@ def score_jobs(input_file: str | None = None, output_file: str | None = None) ->
 
     if already_scored:
         log.info("%s Jobs bereits bewertet, werden uebernommen", already_scored)
-    log.info("%s Jobs werden bewertet", len(to_score))
+    selected_to_score = list(to_score)
+    deferred_jobs: list[dict] = []
+    if mode == "explore":
+        explore_limit = max(0, int(explore_new_job_limit or CONFIG["explore_new_job_limit"]))
+        selected_to_score = _prioritize_explore_jobs(to_score)[:explore_limit]
+        selected_ids = {str(job.get("id") or "") for job in selected_to_score}
+        deferred_jobs = [job for job in to_score if str(job.get("id") or "") not in selected_ids]
+        for job in deferred_jobs:
+            job["score_status"] = "deferred_explore_limit"
+            job["scoring_error"] = ""
+            job["recommended"] = False
+            job["explore_deferred"] = True
+        if deferred_jobs:
+            log.info(
+                "Explore-Modus: %s neue Jobs werden bewertet, %s bleiben vorerst im Explore-Backlog",
+                len(selected_to_score),
+                len(deferred_jobs),
+            )
+    log.info("%s Jobs werden bewertet", len(selected_to_score))
 
-    for idx, job in enumerate(to_score, start=1):
+    for idx, job in enumerate(selected_to_score, start=1):
         log.info(
             "[%3d/%3d] %s @ %s",
             idx,
-            len(to_score),
+            len(selected_to_score),
             _safe_log_text(job["title"], 45),
             _safe_log_text(job["company"], 25),
         )
@@ -277,6 +305,20 @@ def score_jobs(input_file: str | None = None, output_file: str | None = None) ->
         log.warning("Job-Semantik konnte nicht aktualisiert werden: %s", exc)
 
     return recommended
+
+
+def _prioritize_explore_jobs(jobs: list[dict]) -> list[dict]:
+    def sort_key(job: dict) -> tuple[int, int, int, int, str]:
+        bucket = str(job.get("search_term_bucket") or "").strip().lower()
+        origin = str(job.get("search_origin") or "").strip().lower()
+        source = str(job.get("source") or "").strip().lower()
+        description_length = len(str(job.get("description") or ""))
+        bucket_rank = 0 if bucket == "explore" else 1
+        origin_rank = 0 if origin in {"jobspy", "arbeitsagentur", "stepstone", "company_search"} else 1
+        source_rank = 0 if source not in {"greenhouse", "lever", "recruitee"} else 1
+        return (bucket_rank, origin_rank, source_rank, -description_length, str(job.get("title") or ""))
+
+    return sorted(jobs, key=sort_key)
 
 
 def _apply_feedback_learning(job: dict, feedback_summary: dict) -> None:

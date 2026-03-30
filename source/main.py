@@ -116,9 +116,15 @@ def _step_label(step_name: str, steps: list[str]) -> str:
     return f"{index} / {total} - {title}"
 
 
-def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None) -> dict:
+def run_pipeline(
+    dry_run: bool = False,
+    steps_override: list[str] | None = None,
+    *,
+    search_mode: str = "normal",
+) -> dict:
     stats = {
         "Started": datetime.now().strftime("%H:%M:%S"),
+        "Search mode": search_mode,
         "Jobs found": 0,
         "Recommended": 0,
         "Contacts found": 0,
@@ -136,7 +142,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
     if "find_jobs" in steps:
         print_step(_step_label("find_jobs", steps))
         try:
-            jobs = find_jobs()
+            jobs = find_jobs(search_mode=search_mode)
             stats["Jobs found"] = len(jobs)
             sync_jobs(state, jobs, stage="discovered")
             save_pipeline_state(state)
@@ -147,7 +153,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
     if "score_jobs" in steps:
         print_step(_step_label("score_jobs", steps))
         try:
-            recommended = score_jobs()
+            recommended = score_jobs(search_mode=search_mode)
             stats["Recommended"] = len(recommended)
         except Exception as exc:
             log.error("score_jobs failed: %s", exc)
@@ -192,7 +198,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
     return stats
 
 
-def run_loop(dry_run: bool = False) -> None:
+def run_loop(dry_run: bool = False, *, search_mode: str = "normal") -> None:
     state = load_pipeline_state()
     run_number = len(state.get("runs", [])) + 1
 
@@ -206,7 +212,7 @@ def run_loop(dry_run: bool = False) -> None:
             continue
 
         print_banner(run_number)
-        stats = run_pipeline(dry_run=dry_run)
+        stats = run_pipeline(dry_run=dry_run, search_mode=search_mode)
         print_summary(stats)
 
         state = load_pipeline_state()
@@ -237,6 +243,12 @@ def main() -> None:
         help="Fuehrt nur einen einzelnen Schritt aus. Der Default ohne --step geht bis zur Review-UI.",
     )
     parser.add_argument("--interval", type=int, default=CONFIG["loop_interval_hours"])
+    parser.add_argument(
+        "--search-mode",
+        choices=["normal", "explore"],
+        default="normal",
+        help="Waehlt zwischen normaler Profilsuche und explorativer Suche mit engem LLM-Limit.",
+    )
     parser.add_argument("--no-ui", action="store_true", help="Unterdrueckt den automatischen Start der Present-UI.")
     parser.add_argument("--host", default="127.0.0.1", help="Host fuer die lokale Present-UI.")
     parser.add_argument("--port", type=int, default=8765, help="Port fuer die lokale Present-UI.")
@@ -249,13 +261,13 @@ def main() -> None:
     steps_override = [args.step] if args.step else None
 
     if args.loop:
-        run_loop(dry_run=args.dry_run)
+        run_loop(dry_run=args.dry_run, search_mode=args.search_mode)
         return
 
     state = load_pipeline_state()
     run_number = len(state.get("runs", [])) + 1
     print_banner(run_number)
-    stats = run_pipeline(dry_run=args.dry_run, steps_override=steps_override)
+    stats = run_pipeline(dry_run=args.dry_run, steps_override=steps_override, search_mode=args.search_mode)
     print_summary(stats)
 
     state = load_pipeline_state()

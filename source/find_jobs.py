@@ -39,6 +39,7 @@ from source.project_paths import (
     runtime_path,
     source_path,
 )
+from source.search_plan import build_search_plan
 
 # --- Logging -------------------------------------------------------------------
 log = logging.getLogger(__name__)
@@ -1716,32 +1717,119 @@ def _html_to_text(value: str) -> str:
 
 # --- Hauptfunktion -------------------------------------------------------------
 
-def find_jobs() -> list:
+def _annotate_jobs_with_search_context(
+    jobs: list[dict],
+    *,
+    search_mode: str,
+    search_term: str = "",
+    search_bucket: str = "",
+    search_origin: str = "",
+) -> list[dict]:
+    annotated = []
+    for job in jobs:
+        updated = dict(job)
+        updated["search_mode"] = str(search_mode or "normal").strip().lower() or "normal"
+        updated["search_term"] = (search_term or "").strip()
+        updated["search_term_bucket"] = (search_bucket or "").strip()
+        updated["search_origin"] = (search_origin or "").strip()
+        annotated.append(updated)
+    return annotated
+
+
+def _fallback_search_plan(search_mode: str) -> dict:
+    mode = str(search_mode or "normal").strip().lower()
+    if mode not in {"normal", "explore"}:
+        mode = "normal"
+    bucket = "explore" if mode == "explore" else "core"
+    return {
+        "mode": mode,
+        "terms": [{"term": term, "bucket": bucket} for term in CONFIG["search_terms"]],
+        "normal_terms": list(CONFIG["search_terms"]),
+        "explore_terms": list(CONFIG["search_terms"]),
+    }
+
+
+def find_jobs(search_mode: str = "normal") -> list:
     all_jobs = []
+    mode = str(search_mode or "normal").strip().lower()
+    if mode not in {"normal", "explore"}:
+        mode = "normal"
+
+    try:
+        search_plan = build_search_plan(mode)
+    except Exception as exc:
+        log.warning("Search plan fallback aktiv (%s)", exc)
+        search_plan = _fallback_search_plan(mode)
+
+    terms = search_plan.get("terms", [])
+    log.info("Suchmodus: %s", search_plan.get("mode", mode))
+    if terms:
+        log.info(
+            "Suchplan: %s",
+            ", ".join(f"{item.get('term', '')} [{item.get('bucket', 'core')}]" for item in terms),
+        )
 
     primary_sources = load_primary_sources()
     for primary_source in primary_sources:
-        all_jobs += fetch_primary_source(primary_source)
+        all_jobs += _annotate_jobs_with_search_context(
+            fetch_primary_source(primary_source),
+            search_mode=mode,
+            search_bucket="primary",
+            search_origin="primary_source",
+        )
         time.sleep(CONFIG["request_delay"])
 
     company_search_sources = load_company_search_sources()
 
-    for term in CONFIG["search_terms"]:
+    for item in terms:
+        term = str(item.get("term") or "").strip()
+        bucket = str(item.get("bucket") or "core").strip().lower() or "core"
+        if not term:
+            continue
         for company_source in company_search_sources:
-            all_jobs += fetch_company_search_source(company_source, term)
+            all_jobs += _annotate_jobs_with_search_context(
+                fetch_company_search_source(company_source, term),
+                search_mode=mode,
+                search_term=term,
+                search_bucket=bucket,
+                search_origin="company_search",
+            )
             time.sleep(CONFIG["request_delay"])
 
-        all_jobs += fetch_jobspy(term, CONFIG["location"])
+        all_jobs += _annotate_jobs_with_search_context(
+            fetch_jobspy(term, CONFIG["location"]),
+            search_mode=mode,
+            search_term=term,
+            search_bucket=bucket,
+            search_origin="jobspy",
+        )
         time.sleep(CONFIG["request_delay"])
 
-        all_jobs += fetch_arbeitsagentur(term, CONFIG["location"])
+        all_jobs += _annotate_jobs_with_search_context(
+            fetch_arbeitsagentur(term, CONFIG["location"]),
+            search_mode=mode,
+            search_term=term,
+            search_bucket=bucket,
+            search_origin="arbeitsagentur",
+        )
         time.sleep(CONFIG["request_delay"])
 
-        all_jobs += fetch_stepstone(term, CONFIG["location"])
+        all_jobs += _annotate_jobs_with_search_context(
+            fetch_stepstone(term, CONFIG["location"]),
+            search_mode=mode,
+            search_term=term,
+            search_bucket=bucket,
+            search_origin="stepstone",
+        )
         time.sleep(CONFIG["request_delay"])
 
     for source in DIRECT_SOURCES:
-        all_jobs += fetch_direct(source)
+        all_jobs += _annotate_jobs_with_search_context(
+            fetch_direct(source),
+            search_mode=mode,
+            search_bucket="direct",
+            search_origin="direct_source",
+        )
         time.sleep(CONFIG["request_delay"])
 
     all_jobs = enrich_job_descriptions(all_jobs)

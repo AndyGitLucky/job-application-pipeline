@@ -45,8 +45,8 @@ CVs/
 *.xlsx
 Zeugnis und Zertifikate.pdf
 Zeugnis und Zertifikate-k.pdf
-cv_generator/
-cv_generator/profile.json
+profile/master_profile.json
+archive/legacy_cv_generator/output/
 
 # Historical / local leftovers
 .old/

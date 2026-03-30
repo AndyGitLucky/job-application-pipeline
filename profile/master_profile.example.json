@@ -1,0 +1,123 @@
+{
+  "basics": {
+    "name": "Andreas Eichmann",
+    "title": "Machine Learning / Data Scientist",
+    "location": "Munich, Germany",
+    "email": "andreas@example.com",
+    "phone": "+49 123 456789",
+    "links": {
+      "linkedin": "https://www.linkedin.com/in/andreas-eichmann/",
+      "github": "https://github.com/AndyGitLucky",
+      "portfolio": ""
+    }
+  },
+  "summary_candidates": [
+    "Machine learning and data-focused professional with a background in analyzing complex technical systems and structured measurement data.",
+    "Hands-on experience with Python, TensorFlow, statistics, computer vision, and end-to-end project work from data preparation to model evaluation.",
+    "Particularly motivated by applied AI roles in industrial, medical, and high-impact technical environments.",
+    "Strong at translating ambiguous technical problems into structured analyses, reproducible workflows, and clear documentation."
+  ],
+  "skills": {
+    "ml": [
+      "Python",
+      "TensorFlow",
+      "Computer Vision",
+      "CNN",
+      "Machine Learning",
+      "Deep Learning"
+    ],
+    "data": [
+      "Data Analysis",
+      "Statistics",
+      "Pandas",
+      "NumPy",
+      "SQL",
+      "Data Visualization"
+    ],
+    "tools": [
+      "OpenCV",
+      "Git",
+      "Linux"
+    ]
+  },
+  "experience": [
+    {
+      "role": "Technical Specialist / Analyst",
+      "company": "Example Company",
+      "location": "Munich, Germany",
+      "start": "2014",
+      "end": "2025",
+      "bullets": [
+        "Analyzed complex technical systems and test data to identify anomalies, root causes, and improvement opportunities.",
+        "Worked with structured measurement data, quality-relevant findings, and technical documentation in an engineering context.",
+        "Communicated technical results clearly across stakeholders and contributed to reliable decision support."
+      ],
+      "tags": [
+        "data analysis",
+        "technical systems",
+        "root cause analysis",
+        "engineering"
+      ],
+      "tech": [
+        "Python",
+        "Data Analysis",
+        "Technical Documentation"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "M.Sc. / continuing qualification in data-related field",
+      "institution": "Example Institution",
+      "location": "Germany",
+      "start": "2023",
+      "end": "2025"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Emotion Detection with Custom CNN",
+      "subtitle": "Real-time facial emotion recognition",
+      "description": [
+        "Built a custom CNN pipeline for facial emotion recognition using Python, TensorFlow, and OpenCV.",
+        "Implemented data preprocessing, model training, evaluation, and real-time inference workflow.",
+        "Packaged the project with documentation and demo material for portfolio presentation."
+      ],
+      "tech": [
+        "Python",
+        "TensorFlow",
+        "Computer Vision",
+        "CNN",
+        "OpenCV",
+        "Deep Learning"
+      ],
+      "link": "https://github.com/AndyGitLucky/emotion-detection-cnn",
+      "tags": [
+        "computer vision",
+        "deep learning",
+        "real-time inference",
+        "ml project"
+      ]
+    },
+    {
+      "name": "Application Automation Pipeline",
+      "subtitle": "Structured job application workflow tooling",
+      "description": [
+        "Developed scripts and workflow concepts for automating repetitive parts of job search and application preparation.",
+        "Combined structured data handling, document generation, and process optimization ideas.",
+        "Focused on reproducibility, time savings, and scalable personalization."
+      ],
+      "tech": [
+        "Python",
+        "Automation",
+        "Data Processing"
+      ],
+      "link": "",
+      "tags": [
+        "automation",
+        "workflow",
+        "python"
+      ]
+    }
+  ]
+}

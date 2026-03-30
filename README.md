@@ -219,6 +219,8 @@ Dann im Browser:
 ## Wichtige Dateien
 
 - [find_jobs.py](./source/find_jobs.py)
+- [search_plan.py](./source/search_plan.py)
+- [profile_store.py](./source/profile_store.py)
 - [score_jobs.py](./source/score_jobs.py)
 - [job_actions.py](./source/job_actions.py)
 - [present_server.py](./source/present_server.py)
@@ -227,6 +229,25 @@ Dann im Browser:
 - [feedback_learning.py](./source/feedback_learning.py)
 - [PROJECT_STATE.md](./docs/PROJECT_STATE.md)
 - [company_search_sources.json](./config/company_search_sources.json)
+
+## Search Modes
+
+Die Suche kann jetzt in zwei Modi laufen:
+
+- `normal`
+  - profilorientierte Kernsuche auf naheliegende Rollen
+- `explore`
+  - angrenzende Rollenfamilien mit strengem LLM-Budget
+  - neue Explore-Jobs werden aktuell hart auf maximal 20 neue Bewertungen pro Run gedeckelt
+
+Beispiele:
+
+```powershell
+.\.venv\Scripts\python.exe source\main.py --search-mode normal
+.\.venv\Scripts\python.exe source\main.py --search-mode explore
+```
+
+Die Suchbegriffe kommen nicht mehr nur aus einer festen Liste, sondern aus einem kleinen Search-Plan, der aus dem Masterprofil abgeleitet wird.
 
 ## Empfohlene Screenshots
 

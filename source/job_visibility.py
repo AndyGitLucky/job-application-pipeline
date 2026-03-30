@@ -29,6 +29,10 @@ HIDDEN_DECISIONS = {
     "reject",
 }
 
+HIDDEN_SCORE_STATUSES = {
+    "deferred_explore_limit",
+}
+
 
 def load_apply_log(path: str | Path | None = None) -> dict[str, dict]:
     log_path = resolve_runtime_path(path or DEFAULT_APPLY_LOG)
@@ -46,6 +50,8 @@ def load_apply_log(path: str | Path | None = None) -> dict[str, dict]:
 def should_hide_job(job: dict, apply_log: dict[str, dict] | None = None) -> bool:
     if _is_rejected(job):
         return True
+    if str(job.get("score_status") or "").strip().lower() in HIDDEN_SCORE_STATUSES:
+        return True
 
     job_id = str(job.get("id") or "").strip()
     if not job_id or not apply_log:
@@ -59,6 +65,9 @@ def should_hide_job(job: dict, apply_log: dict[str, dict] | None = None) -> bool
 def hidden_reason(job: dict, apply_log: dict[str, dict] | None = None) -> str:
     if _is_rejected(job):
         return "rejected"
+    score_status = str(job.get("score_status") or "").strip().lower()
+    if score_status in HIDDEN_SCORE_STATUSES:
+        return f"score:{score_status}"
 
     job_id = str(job.get("id") or "").strip()
     if not job_id or not apply_log:

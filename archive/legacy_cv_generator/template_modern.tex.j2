@@ -1,0 +1,108 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.15cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\usepackage[scaled=0.96]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.05em, itemsep=0.15em, topsep=0.2em, parsep=0pt, partopsep=0pt}
+\definecolor{ink}{HTML}{1F2933}
+\definecolor{accent}{HTML}{0F766E}
+\definecolor{muted}{HTML}{5B6670}
+\definecolor{sidebarbg}{HTML}{F3F6F8}
+\definecolor{rulegray}{HTML}{D7DEE3}
+\newcommand{\cvsection}[1]{\vspace{0.55em}\begingroup\large\bfseries\color{ink} #1\par\endgroup{\color{accent}\rule{\linewidth}{0.9pt}}\vspace{0.3em}}
+\newcommand{\cvsubtle}[1]{\begingroup\small\color{muted} #1\par\endgroup}
+
+\begin{document}
+\color{ink}
+
+{\fontsize{23}{26}\selectfont\bfseries {{ name }}}\par
+{\large\color{accent} {{ title }}}\par
+\vspace{0.35em}
+{\small {{ location }}{% if email %} \textbar\ \href{mailto:{{ email }}}{ {{ email }} }{% endif %}{% if phone %} \textbar\ {{ phone }}{% endif %}}\par
+{\small{% if linkedin %}\href{ {{ linkedin }} }{LinkedIn}{% endif %}{% if github %} \textbar\ \href{ {{ github }} }{GitHub}{% endif %}{% if portfolio %} \textbar\ \href{ {{ portfolio }} }{Portfolio}{% endif %}}\par
+
+\vspace{0.7em}
+{\color{rulegray}\rule{\linewidth}{1pt}}
+\vspace{0.65em}
+
+\noindent
+\begin{minipage}[t]{0.31\textwidth}
+\raggedright
+\colorbox{sidebarbg}{
+\parbox[t]{0.93\linewidth}{
+\raggedright
+\vspace{0.35em}
+\cvsection{Profile}
+{\small
+{% for line in summary %}
+{{ line }}{% if not loop.last %}\par\vspace{0.45em}{% endif %}
+{% endfor %}
+}
+
+\cvsection{Core Skills}
+{\small
+{% for skill in skills %}
+\textbf{\color{accent} +} {{ skill }}{% if not loop.last %}\par{% endif %}
+{% endfor %}
+}
+
+\cvsection{Languages}
+{\small
+{% for language in languages %}
+\textbf{ {{ language.name }} }\par
+\cvsubtle{ {{ language.level }} }
+{% if not loop.last %}\vspace{0.25em}{% endif %}
+{% endfor %}
+}
+
+\cvsection{Education}
+{\small
+{% for edu in education %}
+\textbf{ {{ edu.display_degree if edu.display_degree is defined else edu.degree }} }\par
+\cvsubtle{ {{ edu.institution }} }\par
+\cvsubtle{ {{ edu.start }} -- {{ edu.end }} }\par
+{% if not loop.last %}\vspace{0.55em}{% endif %}
+{% endfor %}
+}
+\vspace{0.25em}
+}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.65\textwidth}
+\raggedright
+\cvsection{Experience}
+{% for item in experience %}
+{\bfseries {{ item.display_role if item.display_role is defined else item.role }}} \hfill {\small\color{muted} {{ item.start }} -- {{ item.end }}}\par
+{\small\color{accent} {{ item.company }}{% if item.location %} | {{ item.location }}{% endif %}}\par
+\begin{itemize}
+{% for bullet in item.selected_bullets %}
+  \item {\small {{ bullet }}}
+{% endfor %}
+\end{itemize}
+\vspace{0.12em}
+{% endfor %}
+
+\cvsection{Selected Projects}
+{% for project in projects %}
+{\bfseries {{ project.name }}}{% if project.link %} \hfill {\small\href{ {{ project.link }} }{view project}}{% endif %}\par
+{% if project.subtitle %}{\small\color{muted} {{ project.subtitle }}}\par{% endif %}
+\begin{itemize}
+{% for bullet in project.selected_description %}
+  \item {\small {{ bullet }}}
+{% endfor %}
+\end{itemize}
+{% if project.tech %}{\small\color{muted}\textbf{Stack:} {{ project.tech|join(' | ') }}}\par{% endif %}
+\vspace{0.2em}
+{% endfor %}
+\end{minipage}
+
+\end{document}

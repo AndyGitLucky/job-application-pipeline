@@ -1,0 +1,75 @@
+(Senior) LLM / AI Engineer (m/f/d) Predictive Maintenance Agent
+
+Festanstellung, Vollzeit
+Germany, Munich (HQ)
+
+About the role
+
+The AI Research Division of Agile Robots is looking for a motivated and experienced (Senior) LLM / AI Engineer (m/f/d) Predictive Maintenance Agent. You will design and build AI agents that enable factory operators and engineers to analyze, understand, and optimize complex production systems using natural language. The role focuses on production-grade LLM-based systems that translate user intent into reliable data analysis, integrate with factory data pipelines, and support predictive intelligence use cases in real industrial environments.
+
+Your Responsibilities
+
+AI Agent Design:
+Design and implement LLM-based agents that perform multi-step reasoning, tool invocation, and structured data analysis with reliability and determinism.
+
+Data Analysis Automation:
+Build systems that translate natural-language requests into complex analytical workflows over factory and production-line data.
+
+System Integration:
+Integrate AI agents with internal data collection, storage, and monitoring systems used in industrial production environments.
+
+Production Readiness:
+Ensure AI systems are testable, observable, and maintainable through robust evaluation, monitoring, and versioning practices.
+
+Predictive Intelligence:
+Support predictive maintenance and anomaly detection use cases by enabling data-driven analysis and model interaction through AI agents.
+
+Deployment Collaboration:
+Work closely with other teams during on-site deployments to validate, refine, and operate AI systems under real-world constraints.
+
+Essential Skills
+
+Python Engineering:
+Strong Python skills for production systems, including testing, packaging, and maintainable codebases.
+
+Applied Data Analysis & ML:
+Proven experience with applied data analysis and machine learning, including statistics, data exploration, model tuning, evaluation, and deployment.
+
+LLM Agent Development:
+Hands-on experience building LLM-based agents involving tool calling, code generation, multi-step reasoning, reliability or guardrails, and agent efficiency.
+
+Agent Frameworks & RAG:
+Experience with LangChain, LangGraph, or equivalent frameworks, and with retrieval-augmented generation (RAG) systems.
+
+Multimodal Data Analysis:
+Familiarity with time-series analysis, image processing, and multimodal LLM or VLM agents involving text and images.
+
+Data Systems & Operations:
+Strong database fundamentals and SQL, experience with natural-language-to-database querying (NL2SQL or semantic querying), and familiarity with MLOps or LLMOps practices such as evaluation, monitoring, tracing, and versioning.
+
+Deployment Readiness:
+Willingness to travel for on-site deployments.
+
+Beneficial Skills
+
+Industrial Predictive Maintenance:
+Experience with predictive maintenance or anomaly detection in industrial environments, including multimodal data sources.
+
+System Integration:
+Experience designing or integrating REST-based APIs in production systems.
+
+Language Skills:
+Chinese language proficiency.
+
+What we offer
+
+Dynamic high-tech company combined with financial soundness and world class investors.
+Join an interdisciplinary, international team with 60+ different nationalities in a collaborative work environment.
+Lots of development opportunities in the context of our continued growth.
+Challenging tasks and impactful projects alongside experts that enable professional and personal growth.
+Corporate Benefits Program that covers health, mobility and learning with 100 EUR net per month.
+Modern office facilites with a rooftop terrace overlooking Munich, free drinks and fruits, and regular company events contribute to a good working environment.
+
+About us
+
+Agile Robots SE is an international high-tech company based in Munich, Germany with a production site in Kaufbeuren and more than 2300 employees worldwide. Our mission is to bridge the gap between artificial intelligence and robotics by developing systems that combine state-of-the-art force-moment-sensing and world-leading image-processing technology. This unique combination of technologies allows us to provide user-friendly and affordable robotic solutions that enable intelligent precision assembly.
