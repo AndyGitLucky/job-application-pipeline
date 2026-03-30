@@ -175,7 +175,7 @@ Noch bewusst nicht perfekt:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r source\requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2. Konfiguration
@@ -222,8 +222,8 @@ Dann im Browser:
 - [present_dashboard.py](./source/present_dashboard.py)
 - [generate_application.py](./source/generate_application.py)
 - [feedback_learning.py](./source/feedback_learning.py)
-- [PROJECT_STATE.md](./source/PROJECT_STATE.md)
-- [company_search_sources.json](./source/company_search_sources.json)
+- [PROJECT_STATE.md](./docs/PROJECT_STATE.md)
+- [company_search_sources.json](./config/company_search_sources.json)
 
 ## Empfohlene Screenshots
 

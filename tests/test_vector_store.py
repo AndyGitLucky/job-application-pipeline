@@ -2,10 +2,10 @@ import unittest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from retrieval_context import retrieve_relevant_context
-from vector_store import cosine_similarity
+from source.retrieval_context import retrieve_relevant_context
+from source.vector_store import cosine_similarity
 
 
 class VectorStoreTests(unittest.TestCase):

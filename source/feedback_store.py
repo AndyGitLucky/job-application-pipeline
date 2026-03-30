@@ -8,9 +8,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from project_paths import source_path
+from source.project_paths import runtime_path
 
-DEFAULT_PATH = source_path("feedback_log.json")
+DEFAULT_PATH = runtime_path("feedback_log.json")
 
 
 def load_feedback(path: str | Path = DEFAULT_PATH) -> dict:

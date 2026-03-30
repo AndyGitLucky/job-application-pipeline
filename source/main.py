@@ -1,7 +1,7 @@
 """
 main.py
 =======
-Main orchestrator for the automated job application pipeline.
+Main orchestrator for the human-reviewed job pipeline.
 """
 
 from __future__ import annotations
@@ -12,23 +12,28 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from contact_linker import enrich_jobs_with_contacts
-from find_contacts import find_contacts
-from find_jobs import find_jobs
-from generate_application import generate_applications
-from pipeline_state_manager import (
+if __package__ in {None, ""}:
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.contact_linker import enrich_jobs_with_contacts
+from source.find_contacts import find_contacts
+from source.find_jobs import find_jobs
+from source.generate_application import generate_applications
+from source.pipeline_state_manager import (
     append_run,
     load_pipeline_state,
     save_pipeline_state,
     sync_jobs,
 )
-from present_dashboard import generate_present_dashboard
-from present_server import serve_present_ui
-from project_paths import source_path
-from score_jobs import score_jobs
-from verify_jobs import verify_jobs
+from source.present_dashboard import generate_present_dashboard
+from source.present_server import serve_present_ui
+from source.project_paths import runtime_path
+from source.score_jobs import score_jobs
+from source.verify_jobs import verify_jobs
 
-LOG_FILE = source_path("pipeline.log")
+LOG_FILE = runtime_path("pipeline.log")
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -59,6 +64,14 @@ CONFIG = {
         "verify_jobs": True,
         "generate": False,
     },
+}
+
+STEP_TITLES = {
+    "find_jobs": "Jobs finden",
+    "score_jobs": "Jobs scoren",
+    "find_contacts": "Kontakte suchen",
+    "verify_jobs": "Jobs verifizieren",
+    "generate": "Unterlagen im Batch erzeugen",
 }
 
 
@@ -96,6 +109,13 @@ def print_summary(stats: dict) -> None:
     log.info("=" * 60)
 
 
+def _step_label(step_name: str, steps: list[str]) -> str:
+    index = steps.index(step_name) + 1
+    total = len(steps)
+    title = STEP_TITLES.get(step_name, step_name)
+    return f"{index} / {total} - {title}"
+
+
 def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None) -> dict:
     stats = {
         "Started": datetime.now().strftime("%H:%M:%S"),
@@ -114,7 +134,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
     state = load_pipeline_state()
 
     if "find_jobs" in steps:
-        print_step("1 / 5 - find_jobs()")
+        print_step(_step_label("find_jobs", steps))
         try:
             jobs = find_jobs()
             stats["Jobs found"] = len(jobs)
@@ -125,7 +145,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
             stats["Errors"] += 1
 
     if "score_jobs" in steps:
-        print_step("2 / 5 - score_jobs()")
+        print_step(_step_label("score_jobs", steps))
         try:
             recommended = score_jobs()
             stats["Recommended"] = len(recommended)
@@ -134,7 +154,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
             stats["Errors"] += 1
 
     if "find_contacts" in steps:
-        print_step("3 / 4 - find_contacts()")
+        print_step(_step_label("find_contacts", steps))
         try:
             contacts = find_contacts()
             stats["Contacts found"] = len(contacts)
@@ -144,7 +164,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
             stats["Errors"] += 1
 
     if "verify_jobs" in steps:
-        print_step("4 / 4 - verify_jobs()")
+        print_step(_step_label("verify_jobs", steps))
         try:
             verified = verify_jobs()
             stats["Jobs verified"] = len(verified)
@@ -153,7 +173,7 @@ def run_pipeline(dry_run: bool = False, steps_override: list[str] | None = None)
             stats["Errors"] += 1
 
     if "generate" in steps:
-        print_step("optional - generate_applications()")
+        print_step(_step_label("generate", steps))
         try:
             generated = generate_applications()
             stats["Applications generated"] = len(generated)
@@ -206,14 +226,20 @@ def run_loop(dry_run: bool = False) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Jobsuche Pipeline")
+    parser = argparse.ArgumentParser(
+        description="Human-reviewed Jobsuche-Pipeline bis zur lokalen Review-UI."
+    )
     parser.add_argument("--loop", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--step", choices=["find_jobs", "score_jobs", "find_contacts", "verify_jobs", "generate"])
+    parser.add_argument(
+        "--step",
+        choices=["find_jobs", "score_jobs", "find_contacts", "verify_jobs", "generate"],
+        help="Fuehrt nur einen einzelnen Schritt aus. Der Default ohne --step geht bis zur Review-UI.",
+    )
     parser.add_argument("--interval", type=int, default=CONFIG["loop_interval_hours"])
-    parser.add_argument("--no-ui", action="store_true")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--no-ui", action="store_true", help="Unterdrueckt den automatischen Start der Present-UI.")
+    parser.add_argument("--host", default="127.0.0.1", help="Host fuer die lokale Present-UI.")
+    parser.add_argument("--port", type=int, default=8765, help="Port fuer die lokale Present-UI.")
     args = parser.parse_args()
 
     if args.interval != CONFIG["loop_interval_hours"]:

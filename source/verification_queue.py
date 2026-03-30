@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from project_paths import resolve_source_path, source_path
+from source.project_paths import resolve_runtime_path, runtime_path
 
 
 NEGATIVE_RISK_FLAGS = {
@@ -71,10 +71,10 @@ def verification_priority(job: dict) -> tuple[int, list[str]]:
 
 
 def build_verification_queue(
-    input_file: str | Path = source_path("jobs_scored.json"),
+    input_file: str | Path = runtime_path("jobs_scored.json"),
     limit: int = 10,
 ) -> list[dict]:
-    input_path = resolve_source_path(input_file)
+    input_path = resolve_runtime_path(input_file)
     if not input_path.exists():
         return []
 

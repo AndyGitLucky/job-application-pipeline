@@ -3,11 +3,11 @@ import sys
 from pathlib import Path
 import types
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.modules.setdefault("feedparser", types.SimpleNamespace())
 sys.modules.setdefault("bs4", types.SimpleNamespace(BeautifulSoup=object))
 
-from find_jobs import (
+from source.find_jobs import (
     deduplicate_by_content,
     invalid_job_reason,
     listing_status,

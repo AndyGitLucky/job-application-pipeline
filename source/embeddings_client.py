@@ -11,7 +11,7 @@ from pathlib import Path
 
 import requests
 
-from env_utils import load_dotenv
+from source.env_utils import load_dotenv
 
 load_dotenv(Path(__file__))
 

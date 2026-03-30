@@ -5,10 +5,10 @@ import types
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.modules.setdefault("feedparser", types.SimpleNamespace())
 
-from find_jobs import (
+from source.find_jobs import (
     _extract_bmw_location,
     _extract_infineon_location,
     _extract_siemens_location,
@@ -101,7 +101,7 @@ class PrimarySourcesTests(unittest.TestCase):
         self.assertEqual(_extract_bmw_location(text), "München, BY, DE, 80809")
 
     def test_enrich_job_description_prefers_richer_detail_text(self):
-        import find_jobs
+        from source import find_jobs
 
         original = find_jobs.fetch_arbeitsagentur_job_description
         try:

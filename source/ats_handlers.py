@@ -24,7 +24,7 @@ import os
 import re
 from pathlib import Path
 
-from env_utils import load_dotenv, env_flag
+from source.env_utils import load_dotenv, env_flag
 
 try:
     from selenium import webdriver

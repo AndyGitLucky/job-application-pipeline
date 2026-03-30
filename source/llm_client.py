@@ -20,7 +20,7 @@ from pathlib import Path
 
 import requests
 
-from env_utils import load_dotenv
+from source.env_utils import load_dotenv
 
 log = logging.getLogger(__name__)
 

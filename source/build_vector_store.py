@@ -4,7 +4,13 @@ Builds the local semantic knowledge store.
 
 from __future__ import annotations
 
-from vector_store import ensure_store
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.vector_store import ensure_store
 
 
 def main() -> None:

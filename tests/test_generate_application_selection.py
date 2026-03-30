@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import generate_application as ga
+from source import generate_application as ga
 
 
 class GenerateApplicationSelectionTests(unittest.TestCase):

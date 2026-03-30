@@ -4,22 +4,22 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from feedback_store import record_feedback
-from feedback_learning import refresh_feedback_summary
-from generate_application import generate_applications
-from pipeline_state_manager import (
+from source.feedback_store import record_feedback
+from source.feedback_learning import refresh_feedback_summary
+from source.generate_application import generate_applications
+from source.pipeline_state_manager import (
     load_pipeline_state,
     save_pipeline_state,
     set_review_status,
     set_verification_status,
     update_job_stage,
 )
-from project_paths import source_path
-from review_pipeline import update_job_record
+from source.project_paths import runtime_path
+from source.review_pipeline import update_job_record
 
 
-APPLY_LOG_PATH = source_path("apply_log.json")
-SCORED_JOBS_PATH = source_path("jobs_scored.json")
+APPLY_LOG_PATH = runtime_path("apply_log.json")
+SCORED_JOBS_PATH = runtime_path("jobs_scored.json")
 
 
 def _job_feedback_context(job_id: str) -> dict:

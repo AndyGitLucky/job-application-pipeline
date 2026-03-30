@@ -24,10 +24,21 @@ from urllib.parse import urlparse
 import requests
 import feedparser
 from bs4 import BeautifulSoup
-from env_utils import load_dotenv
-from job_url_normalizer import normalize_job_url
-from link_extractor import annotate_job_links
-from project_paths import resolve_source_path, source_path
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.env_utils import load_dotenv
+from source.job_url_normalizer import normalize_job_url
+from source.link_extractor import annotate_job_links
+from source.project_paths import (
+    config_path,
+    resolve_config_path,
+    resolve_runtime_path,
+    runtime_path,
+    source_path,
+)
 
 # --- Logging -------------------------------------------------------------------
 log = logging.getLogger(__name__)
@@ -48,14 +59,14 @@ CONFIG = {
     "location_strategy": "munich_only",  # munich_only | prefer_munich | all
     "priority_locations": ["muenchen", "münchen"],
     "radius_km": 30,
-    "output_file": str(source_path("jobs_raw.json")),
-    "primary_sources_file": os.getenv("PRIMARY_SOURCES_FILE", str(source_path("primary_sources.json"))),
-    "company_search_sources_file": os.getenv("COMPANY_SEARCH_SOURCES_FILE", str(source_path("company_search_sources.json"))),
+    "output_file": str(runtime_path("jobs_raw.json")),
+    "primary_sources_file": os.getenv("PRIMARY_SOURCES_FILE", str(config_path("primary_sources.json"))),
+    "company_search_sources_file": os.getenv("COMPANY_SEARCH_SOURCES_FILE", str(config_path("company_search_sources.json"))),
     "request_delay": 1.5,      # Sekunden zwischen Requests (fair use)
     "bmw_detail_request_limit": 10,
     "bmw_cache_ttl_hours": 12,
-    "bmw_url_cache_file": str(source_path("cache", "bmw_job_urls.json")),
-    "bmw_detail_cache_file": str(source_path("cache", "bmw_job_details.json")),
+    "bmw_url_cache_file": str(runtime_path("cache", "bmw_job_urls.json")),
+    "bmw_detail_cache_file": str(runtime_path("cache", "bmw_job_details.json")),
     "headers": {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -90,7 +101,7 @@ def _cache_cutoff() -> datetime:
 
 
 def _load_json_cache(path: str) -> dict:
-    cache_path = resolve_source_path(path)
+    cache_path = resolve_runtime_path(path)
     if not cache_path.exists():
         return {}
     try:
@@ -101,7 +112,7 @@ def _load_json_cache(path: str) -> dict:
 
 
 def _save_json_cache(path: str, payload: dict) -> None:
-    cache_path = resolve_source_path(path)
+    cache_path = resolve_runtime_path(path)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -963,7 +974,7 @@ def fetch_direct(source: dict) -> list:
 
 
 def load_primary_sources(path: str | Path | None = None) -> list[dict]:
-    source_file = resolve_source_path(path or CONFIG["primary_sources_file"])
+    source_file = resolve_config_path(path or CONFIG["primary_sources_file"])
     if not source_file.exists():
         return []
     try:
@@ -976,7 +987,7 @@ def load_primary_sources(path: str | Path | None = None) -> list[dict]:
 
 
 def load_company_search_sources(path: str | Path | None = None) -> list[dict]:
-    source_file = resolve_source_path(path or CONFIG["company_search_sources_file"])
+    source_file = resolve_config_path(path or CONFIG["company_search_sources_file"])
     if not source_file.exists():
         return []
     try:
@@ -1743,7 +1754,7 @@ def find_jobs() -> list:
     # Speichern
     log.info(f"Validierung: {len(validated)} echte Stellen → {len(invalid_jobs)} verworfen")
 
-    output = resolve_source_path(CONFIG["output_file"])
+    output = resolve_runtime_path(CONFIG["output_file"])
     output.write_text(json.dumps(validated, ensure_ascii=False, indent=2), encoding="utf-8")
     log.info(f"Gespeichert: {output.resolve()}")
 

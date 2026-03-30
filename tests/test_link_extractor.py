@@ -2,9 +2,9 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from link_extractor import annotate_job_links
+from source.link_extractor import annotate_job_links
 
 
 class LinkExtractorTests(unittest.TestCase):

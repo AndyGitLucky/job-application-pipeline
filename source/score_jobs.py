@@ -12,26 +12,31 @@ import logging
 import time
 from pathlib import Path
 
-from candidate_profile import PROFILE_TEXT
-from decision_engine import prepare_job_decision
-from feedback_learning import feedback_delta_for_job, refresh_feedback_summary
-from job_buckets import classify_job
-from llm_client import llm_complete
-from pipeline_state_manager import (
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.candidate_profile import PROFILE_TEXT
+from source.decision_engine import prepare_job_decision
+from source.feedback_learning import feedback_delta_for_job, refresh_feedback_summary
+from source.job_buckets import classify_job
+from source.llm_client import llm_complete
+from source.pipeline_state_manager import (
     load_pipeline_state,
     save_pipeline_state,
     sync_jobs,
     update_job_decision,
     update_job_stage,
 )
-from project_paths import resolve_source_path, source_path
-from retrieval_context import format_retrieval_context
+from source.project_paths import artifacts_path, resolve_runtime_path, runtime_path
+from source.retrieval_context import format_retrieval_context
 
 log = logging.getLogger(__name__)
 
 CONFIG = {
-    "input_file": str(source_path("jobs_raw.json")),
-    "output_file": str(source_path("jobs_scored.json")),
+    "input_file": str(runtime_path("jobs_raw.json")),
+    "output_file": str(runtime_path("jobs_scored.json")),
     "min_score": 6,
     "request_delay": 0.5,
     "filter_degree_required": False,
@@ -144,15 +149,15 @@ def score_job(job: dict) -> dict:
 
 
 def score_jobs(input_file: str | None = None, output_file: str | None = None) -> list:
-    input_path = resolve_source_path(input_file or CONFIG["input_file"])
-    output_path = resolve_source_path(output_file or CONFIG["output_file"])
+    input_path = resolve_runtime_path(input_file or CONFIG["input_file"])
+    output_path = resolve_runtime_path(output_file or CONFIG["output_file"])
 
     if not input_path.exists():
         log.error("Input-Datei nicht gefunden: %s", input_path)
         return []
 
     jobs = json.loads(input_path.read_text(encoding="utf-8"))
-    feedback_summary = refresh_feedback_summary(output_path=source_path("feedback_summary.json"))
+    feedback_summary = refresh_feedback_summary(output_path=runtime_path("feedback_summary.json"))
     preserved = _load_preserved_scores(output_path)
     for job in jobs:
         existing = preserved.get(job.get("id"))
@@ -283,7 +288,7 @@ def _load_preserved_scores(output_path: Path) -> dict[str, dict]:
         except Exception:
             pass
 
-    applications_dir = source_path("applications")
+    applications_dir = artifacts_path("applications")
     if applications_dir.exists():
         for meta_path in applications_dir.glob("*/meta.json"):
             try:

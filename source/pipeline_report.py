@@ -7,8 +7,14 @@ from __future__ import annotations
 import json
 from collections import Counter
 
-from pipeline_state_manager import load_pipeline_state
-from project_paths import source_path
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.pipeline_state_manager import load_pipeline_state
+from source.project_paths import runtime_path
 
 
 def main() -> None:
@@ -20,7 +26,7 @@ def main() -> None:
     bucket_counter = Counter()
 
     jobs_scored_by_id = {}
-    scored_path = source_path("jobs_scored.json")
+    scored_path = runtime_path("jobs_scored.json")
     if scored_path.exists():
         try:
             jobs_scored = json.loads(scored_path.read_text(encoding="utf-8"))

@@ -16,22 +16,27 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from candidate_profile import PROFILE_TEXT
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.candidate_profile import PROFILE_TEXT
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt
 from docx2pdf import convert as docx2pdf_convert
-from llm_client import llm_complete
-from pipeline_state_manager import (
+from source.llm_client import llm_complete
+from source.pipeline_state_manager import (
     attach_job_artifact,
     load_pipeline_state,
     save_pipeline_state,
     sync_jobs,
     update_job_stage,
 )
-from project_paths import ROOT_DIR, resolve_source_path, source_path
-from retrieval_context import format_retrieval_context
-from text_guardrails import find_negative_self_disclosure
+from source.project_paths import ROOT_DIR, artifacts_path, resolve_artifacts_path, resolve_runtime_path, runtime_path
+from source.retrieval_context import format_retrieval_context
+from source.text_guardrails import find_negative_self_disclosure
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,8 +46,8 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 CONFIG = {
-    "input_file": str(source_path("jobs_scored.json")),
-    "output_dir": str(source_path("applications")),
+    "input_file": str(runtime_path("jobs_scored.json")),
+    "output_dir": str(artifacts_path("applications")),
     "cover_letter_dir": str(ROOT_DIR / "Cover Letters"),
     "request_delay": 1.0,
     "min_score": 6,
@@ -235,7 +240,7 @@ def make_output_dir(job: dict) -> Path:
 
     safe_company = re.sub(r"[^\w\-]+", "_", company_raw)
     safe_company = re.sub(r"_+", "_", safe_company).strip("_-")[:60] or "unbekannt"
-    output_dir = resolve_source_path(CONFIG["output_dir"]) / f"{safe_company}_{job['id']}"
+    output_dir = resolve_artifacts_path(CONFIG["output_dir"]) / f"{safe_company}_{job['id']}"
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -287,7 +292,7 @@ def generate_applications(
     job_ids: set[str] | None = None,
     limit: int | None = None,
 ) -> list:
-    input_path = resolve_source_path(input_file or CONFIG["input_file"])
+    input_path = resolve_runtime_path(input_file or CONFIG["input_file"])
     if not input_path.exists():
         log.error("Input-Datei nicht gefunden: %s", input_path)
         return []

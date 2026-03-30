@@ -5,9 +5,9 @@ from unittest.mock import patch
 
 import requests
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from company_url_resolver import resolve_company_apply_url
+from source.company_url_resolver import resolve_company_apply_url
 
 
 class _Response:

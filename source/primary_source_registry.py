@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 
-from project_paths import resolve_source_path, source_path
+from source.project_paths import config_path, resolve_config_path
 
 
 def infer_primary_source(url: str, *, company: str = "", location: str = "") -> dict | None:
@@ -44,7 +44,7 @@ def infer_primary_source(url: str, *, company: str = "", location: str = "") -> 
 
 
 def load_primary_sources(path: str | Path | None = None) -> list[dict]:
-    source_file = resolve_source_path(path or _default_primary_sources_file())
+    source_file = resolve_config_path(path or _default_primary_sources_file())
     if not source_file.exists():
         return []
     try:
@@ -67,7 +67,7 @@ def remember_primary_source(
     if not inferred:
         return None
 
-    source_file = resolve_source_path(path or _default_primary_sources_file())
+    source_file = resolve_config_path(path or _default_primary_sources_file())
     existing = load_primary_sources(source_file)
     dedupe_key = _primary_source_key(inferred)
     if not dedupe_key:
@@ -104,4 +104,4 @@ def _primary_source_key(item: dict) -> tuple[str, str] | None:
 def _default_primary_sources_file() -> str:
     import os
 
-    return os.getenv("PRIMARY_SOURCES_FILE", str(source_path("primary_sources.json")))
+    return os.getenv("PRIMARY_SOURCES_FILE", str(config_path("primary_sources.json")))

@@ -5,12 +5,12 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from feedback_store import load_feedback
-from project_paths import source_path
+from source.feedback_store import load_feedback
+from source.project_paths import runtime_path
 
 
-DEFAULT_FEEDBACK_SUMMARY = source_path("feedback_summary.json")
-DEFAULT_SCORED_JOBS = source_path("jobs_scored.json")
+DEFAULT_FEEDBACK_SUMMARY = runtime_path("feedback_summary.json")
+DEFAULT_SCORED_JOBS = runtime_path("jobs_scored.json")
 
 
 def normalize_feedback_reason(note: str) -> str:
@@ -37,7 +37,7 @@ def normalize_feedback_reason(note: str) -> str:
 def refresh_feedback_summary(
     jobs_path: str | Path = DEFAULT_SCORED_JOBS,
     *,
-    feedback_path: str | Path = source_path("feedback_log.json"),
+    feedback_path: str | Path = runtime_path("feedback_log.json"),
     output_path: str | Path = DEFAULT_FEEDBACK_SUMMARY,
 ) -> dict:
     jobs = _load_jobs(jobs_path)

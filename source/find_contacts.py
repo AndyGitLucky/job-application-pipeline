@@ -25,15 +25,20 @@ from urllib.parse import quote, urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from project_paths import resolve_source_path, source_path
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.project_paths import resolve_runtime_path, runtime_path
 
 # ─── Logging ───────────────────────────────────────────────────────────────────
 log = logging.getLogger(__name__)
 
 # ─── Konfiguration ─────────────────────────────────────────────────────────────
 CONFIG = {
-    "output_json":       str(source_path("contacts.json")),
-    "output_csv":        str(source_path("contacts.csv")),
+    "output_json":       str(runtime_path("contacts.json")),
+    "output_csv":        str(runtime_path("contacts.csv")),
     "request_delay":     2.0,
     "hunter_api_key":    "",   # https://hunter.io → kostenlos registrieren (25 Suchen/Monat)
     "headers": {
@@ -79,8 +84,8 @@ COMPANIES = [
 ]
 
 
-def load_companies_from_jobs(jobs_path: str | Path = source_path("jobs_scored.json")) -> list[dict]:
-    path = resolve_source_path(jobs_path)
+def load_companies_from_jobs(jobs_path: str | Path = runtime_path("jobs_scored.json")) -> list[dict]:
+    path = resolve_runtime_path(jobs_path)
     if not path.exists():
         return []
     jobs = json.loads(path.read_text(encoding="utf-8"))
@@ -372,13 +377,13 @@ def find_contacts(companies: list = None) -> list:
     all_contacts = deduplicate_contacts(all_contacts)
 
     # JSON speichern
-    resolve_source_path(CONFIG["output_json"]).write_text(
+    resolve_runtime_path(CONFIG["output_json"]).write_text(
         json.dumps(all_contacts, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
     # CSV speichern (für Excel / Tracker)
-    with open(resolve_source_path(CONFIG["output_csv"]), "w", newline="", encoding="utf-8") as f:
+    with open(resolve_runtime_path(CONFIG["output_csv"]), "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "name", "role", "email", "company", "source",
             "confidence", "linkedin", "outreach_sent", "replied"

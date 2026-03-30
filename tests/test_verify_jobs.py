@@ -7,9 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import verify_jobs as vj
+from source import verify_jobs as vj
 
 
 class VerifyJobsTests(unittest.TestCase):
@@ -42,7 +42,7 @@ class VerifyJobsTests(unittest.TestCase):
 
             with patch.dict(os.environ, {"PRIMARY_SOURCES_FILE": str(primary_sources_path)}):
                 with patch(
-                    "verify_jobs.resolve_company_apply_url",
+                    "source.verify_jobs.resolve_company_apply_url",
                     return_value=SimpleNamespace(
                         url="https://demo.recruitee.com/o/ai-engineer",
                         source="html",

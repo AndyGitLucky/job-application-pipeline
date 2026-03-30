@@ -8,16 +8,21 @@ import argparse
 import json
 from pathlib import Path
 
-from feedback_store import record_feedback
-from job_buckets import classify_job
-from pipeline_state_manager import (
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.feedback_store import record_feedback
+from source.job_buckets import classify_job
+from source.pipeline_state_manager import (
     load_pipeline_state,
     save_pipeline_state,
     set_review_status,
     set_verification_status,
 )
-from primary_source_registry import remember_primary_source
-from project_paths import source_path
+from source.primary_source_registry import remember_primary_source
+from source.project_paths import artifacts_path, runtime_path
 
 
 def list_pending() -> int:
@@ -43,7 +48,7 @@ def list_pending() -> int:
 
 
 def list_verification_queue(limit: int = 20) -> int:
-    scored_path = source_path("jobs_scored.json")
+    scored_path = runtime_path("jobs_scored.json")
     if not scored_path.exists():
         print("verification_queue_jobs=0")
         return 0
@@ -107,7 +112,7 @@ def verify(job_id: str, action: str, note: str = "") -> None:
 
 
 def update_job_record(job_id: str, action: str, note: str = "") -> None:
-    scored_path = source_path("jobs_scored.json")
+    scored_path = runtime_path("jobs_scored.json")
     if not scored_path.exists():
         return
 
@@ -164,7 +169,7 @@ def update_job_record(job_id: str, action: str, note: str = "") -> None:
 
 
 def _update_meta_if_present(job: dict) -> None:
-    applications_dir = source_path("applications")
+    applications_dir = artifacts_path("applications")
     if not applications_dir.exists():
         return
     job_id = str(job.get("id") or "").strip()

@@ -6,15 +6,20 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
-from job_visibility import hidden_reason, load_apply_log, should_hide_job
-from link_extractor import annotate_job_links
-from project_paths import resolve_source_path, source_path
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.job_visibility import hidden_reason, load_apply_log, should_hide_job
+from source.link_extractor import annotate_job_links
+from source.project_paths import artifacts_path, resolve_artifacts_path, resolve_runtime_path, runtime_path
 
 
-DEFAULT_RAW = source_path("jobs_raw.json")
-DEFAULT_SCORED = source_path("jobs_scored.json")
-DEFAULT_OUTPUT = source_path("present_dashboard.html")
-DEFAULT_APPLY_LOG = source_path("apply_log.json")
+DEFAULT_RAW = runtime_path("jobs_raw.json")
+DEFAULT_SCORED = runtime_path("jobs_scored.json")
+DEFAULT_OUTPUT = artifacts_path("present_dashboard.html")
+DEFAULT_APPLY_LOG = runtime_path("apply_log.json")
 
 
 def generate_present_dashboard(
@@ -23,7 +28,7 @@ def generate_present_dashboard(
     output_path: str | Path | None = None,
     apply_log_path: str | Path | None = None,
 ) -> Path:
-    out_path = resolve_source_path(output_path or DEFAULT_OUTPUT)
+    out_path = resolve_artifacts_path(output_path or DEFAULT_OUTPUT)
     html_text = render_present_dashboard(
         jobs_raw_path=jobs_raw_path,
         jobs_scored_path=jobs_scored_path,
@@ -41,8 +46,8 @@ def render_present_dashboard(
     interactive: bool = False,
     action_message: str = "",
 ) -> str:
-    raw_path = resolve_source_path(jobs_raw_path or DEFAULT_RAW)
-    scored_path = resolve_source_path(jobs_scored_path or DEFAULT_SCORED)
+    raw_path = resolve_runtime_path(jobs_raw_path or DEFAULT_RAW)
+    scored_path = resolve_runtime_path(jobs_scored_path or DEFAULT_SCORED)
     apply_log = load_apply_log(apply_log_path or DEFAULT_APPLY_LOG)
 
     raw_jobs = _load_json_list(raw_path)

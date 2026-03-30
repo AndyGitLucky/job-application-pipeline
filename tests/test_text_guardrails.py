@@ -2,9 +2,9 @@ import unittest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from text_guardrails import find_negative_self_disclosure
+from source.text_guardrails import find_negative_self_disclosure
 
 
 class TextGuardrailTests(unittest.TestCase):

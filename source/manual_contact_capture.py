@@ -4,13 +4,18 @@ import argparse
 import json
 from pathlib import Path
 
-from job_buckets import classify_job
-from project_paths import source_path
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.job_buckets import classify_job
+from source.project_paths import runtime_path
 
 
-CONTACTS_PATH = source_path("contacts.json")
-RAW_JOBS_PATH = source_path("jobs_raw.json")
-SCORED_JOBS_PATH = source_path("jobs_scored.json")
+CONTACTS_PATH = runtime_path("contacts.json")
+RAW_JOBS_PATH = runtime_path("jobs_raw.json")
+SCORED_JOBS_PATH = runtime_path("jobs_scored.json")
 
 
 def capture_manual_contact(

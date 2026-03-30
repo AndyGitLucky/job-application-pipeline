@@ -11,7 +11,7 @@ from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 
-from project_paths import source_path
+from source.project_paths import runtime_path
 
 DEFAULT_STATE = {
     "last_run": None,
@@ -21,7 +21,7 @@ DEFAULT_STATE = {
 }
 
 
-def load_pipeline_state(path: str | Path = source_path("pipeline_state.json")) -> dict:
+def load_pipeline_state(path: str | Path = runtime_path("pipeline_state.json")) -> dict:
     state_path = Path(path)
     if not state_path.exists():
         return deepcopy(DEFAULT_STATE)
@@ -35,7 +35,7 @@ def load_pipeline_state(path: str | Path = source_path("pipeline_state.json")) -
     return state
 
 
-def save_pipeline_state(state: dict, path: str | Path = source_path("pipeline_state.json")) -> None:
+def save_pipeline_state(state: dict, path: str | Path = runtime_path("pipeline_state.json")) -> None:
     Path(path).write_text(
         json.dumps(state, ensure_ascii=False, indent=2),
         encoding="utf-8",

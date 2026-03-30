@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from primary_source_registry import infer_primary_source, remember_primary_source
+from source.primary_source_registry import infer_primary_source, remember_primary_source
 
 
 class PrimarySourceRegistryTests(unittest.TestCase):

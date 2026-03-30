@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from feedback_learning import feedback_delta_for_job, normalize_feedback_reason, refresh_feedback_summary
+from source.feedback_learning import feedback_delta_for_job, normalize_feedback_reason, refresh_feedback_summary
 
 
 class FeedbackLearningTests(unittest.TestCase):
@@ -73,4 +73,3 @@ class FeedbackLearningTests(unittest.TestCase):
             )
             self.assertLess(delta, 0)
             self.assertTrue(signals)
-

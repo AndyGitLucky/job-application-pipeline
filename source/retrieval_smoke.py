@@ -6,9 +6,15 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
-from retrieval_context import retrieve_relevant_context
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.project_paths import runtime_path
+from source.retrieval_context import retrieve_relevant_context
 
 
 def main() -> None:
@@ -18,7 +24,7 @@ def main() -> None:
     parser.add_argument("--job-indexes", default="0,1,4")
     args = parser.parse_args()
 
-    jobs = json.loads((Path(__file__).resolve().parent / "jobs_scored.json").read_text(encoding="utf-8"))
+    jobs = json.loads(runtime_path("jobs_scored.json").read_text(encoding="utf-8"))
     indexes = [int(item.strip()) for item in args.job_indexes.split(",") if item.strip()]
     for index in indexes:
         if index >= len(jobs):

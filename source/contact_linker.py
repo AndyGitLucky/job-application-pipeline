@@ -7,9 +7,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from job_buckets import classify_job
-from pipeline_state_manager import attach_job_artifact, load_pipeline_state, save_pipeline_state
-from project_paths import resolve_source_path, source_path
+from source.job_buckets import classify_job
+from source.pipeline_state_manager import attach_job_artifact, load_pipeline_state, save_pipeline_state
+from source.project_paths import resolve_runtime_path, runtime_path
 
 ROLE_PRIORITY = [
     "head of data",
@@ -23,12 +23,12 @@ ROLE_PRIORITY = [
 
 
 def enrich_jobs_with_contacts(
-    jobs_path: str | Path = source_path("jobs_scored.json"),
-    contacts_path: str | Path = source_path("contacts.json"),
-    state_path: str | Path = source_path("pipeline_state.json"),
+    jobs_path: str | Path = runtime_path("jobs_scored.json"),
+    contacts_path: str | Path = runtime_path("contacts.json"),
+    state_path: str | Path = runtime_path("pipeline_state.json"),
 ) -> int:
-    jobs_file = resolve_source_path(jobs_path)
-    contacts_file = resolve_source_path(contacts_path)
+    jobs_file = resolve_runtime_path(jobs_path)
+    contacts_file = resolve_runtime_path(contacts_path)
     if not jobs_file.exists() or not contacts_file.exists():
         return 0
 

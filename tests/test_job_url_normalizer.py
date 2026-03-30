@@ -2,9 +2,9 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from job_url_normalizer import normalize_job_url
+from source.job_url_normalizer import normalize_job_url
 
 
 class JobUrlNormalizerTests(unittest.TestCase):

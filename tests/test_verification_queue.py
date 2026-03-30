@@ -2,9 +2,9 @@ import unittest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from verification_queue import verification_priority
+from source.verification_queue import verification_priority
 
 
 class VerificationQueueTests(unittest.TestCase):

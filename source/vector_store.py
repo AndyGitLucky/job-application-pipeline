@@ -7,12 +7,12 @@ from __future__ import annotations
 import json
 import math
 import re
-from pathlib import Path
 
-from candidate_profile import knowledge_items_for
-from embeddings_client import embed_texts, embeddings_enabled
+from source.candidate_profile import knowledge_items_for
+from source.embeddings_client import embed_texts, embeddings_enabled
+from source.project_paths import runtime_path
 
-STORE_PATH = Path(__file__).resolve().parent / "knowledge_store.json"
+STORE_PATH = runtime_path("knowledge_store.json")
 
 CATEGORY_BOOSTS = {
     "application": {

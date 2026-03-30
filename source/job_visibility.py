@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from project_paths import resolve_source_path, source_path
+from source.project_paths import resolve_runtime_path, runtime_path
 
 
-DEFAULT_APPLY_LOG = source_path("apply_log.json")
+DEFAULT_APPLY_LOG = runtime_path("apply_log.json")
 
 HIDDEN_APPLY_STATUSES = {
     "sent",
@@ -31,7 +31,7 @@ HIDDEN_DECISIONS = {
 
 
 def load_apply_log(path: str | Path | None = None) -> dict[str, dict]:
-    log_path = resolve_source_path(path or DEFAULT_APPLY_LOG)
+    log_path = resolve_runtime_path(path or DEFAULT_APPLY_LOG)
     if not log_path.exists():
         return {}
     try:

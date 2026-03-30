@@ -3,9 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from present_dashboard import generate_present_dashboard, render_present_dashboard
+from source.present_dashboard import generate_present_dashboard, render_present_dashboard
 
 
 class PresentDashboardTests(unittest.TestCase):

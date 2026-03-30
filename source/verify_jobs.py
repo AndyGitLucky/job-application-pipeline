@@ -13,24 +13,29 @@ import json
 import logging
 from pathlib import Path
 
-from ats_handlers import detect_ats
-from company_url_resolver import resolve_company_apply_url
-from job_buckets import classify_job
-from pipeline_state_manager import (
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.ats_handlers import detect_ats
+from source.company_url_resolver import resolve_company_apply_url
+from source.job_buckets import classify_job
+from source.pipeline_state_manager import (
     load_pipeline_state,
     save_pipeline_state,
     set_verification_status,
     sync_jobs,
     update_job_stage,
 )
-from primary_source_registry import remember_primary_source
-from project_paths import resolve_source_path, source_path
+from source.primary_source_registry import remember_primary_source
+from source.project_paths import resolve_runtime_path, runtime_path
 
 log = logging.getLogger(__name__)
 
 CONFIG = {
-    "input_file": str(source_path("jobs_scored.json")),
-    "output_file": str(source_path("jobs_scored.json")),
+    "input_file": str(runtime_path("jobs_scored.json")),
+    "output_file": str(runtime_path("jobs_scored.json")),
     "max_jobs": 25,
 }
 
@@ -41,8 +46,8 @@ def verify_jobs(
     *,
     limit: int | None = None,
 ) -> list[dict]:
-    input_path = resolve_source_path(input_file or CONFIG["input_file"])
-    output_path = resolve_source_path(output_file or CONFIG["output_file"])
+    input_path = resolve_runtime_path(input_file or CONFIG["input_file"])
+    output_path = resolve_runtime_path(output_file or CONFIG["output_file"])
     if not input_path.exists():
         log.error("Input-Datei nicht gefunden: %s", input_path)
         return []

@@ -5,8 +5,14 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs
 
-from job_actions import perform_ui_action
-from present_dashboard import render_present_dashboard
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from source.job_actions import perform_ui_action
+from source.present_dashboard import render_present_dashboard
 
 
 class PresentHandler(BaseHTTPRequestHandler):

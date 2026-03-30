@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import re
 
-from candidate_profile import PROFILE_FACTS, knowledge_items_for
-from vector_store import semantic_search
+from source.candidate_profile import PROFILE_FACTS, knowledge_items_for
+from source.vector_store import semantic_search
 
 STOPWORDS = {
     "and", "oder", "der", "die", "das", "mit", "fuer", "und", "ein", "eine",

@@ -4,9 +4,9 @@ import unittest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from contact_linker import choose_best_contact, enrich_jobs_with_contacts
+from source.contact_linker import choose_best_contact, enrich_jobs_with_contacts
 
 
 class ContactLinkerTests(unittest.TestCase):

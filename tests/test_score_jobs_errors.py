@@ -2,9 +2,9 @@ import unittest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "source"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from score_jobs import score_job
+from source.score_jobs import score_job
 
 
 class ScoreJobsErrorTests(unittest.TestCase):
@@ -12,7 +12,7 @@ class ScoreJobsErrorTests(unittest.TestCase):
         from unittest.mock import patch
 
         job = {"title": "Demo", "company": "DemoCo", "description": "Test"}
-        with patch("score_jobs.llm_complete", side_effect=RuntimeError("network down")):
+        with patch("source.score_jobs.llm_complete", side_effect=RuntimeError("network down")):
             result = score_job(job)
 
         self.assertEqual(result["score"], 0)
