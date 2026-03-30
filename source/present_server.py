@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 
 if __package__ in {None, ""}:
     import sys
@@ -12,19 +12,83 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from source.job_actions import perform_ui_action
+from source.job_similarity_eval import record_similarity_decision, render_similarity_eval_page
 from source.present_dashboard import render_present_dashboard
 
 
 class PresentHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        if self.path not in {"/", "/index.html"}:
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
+
+        if path in {"/", "/index.html"}:
+            html = render_present_dashboard(interactive=True)
+            self._send_html(html)
+            return
+
+        if path == "/embedding-eval":
+            page = int((query.get("page") or ["1"])[0] or 1)
+            batch_size = int((query.get("batch_size") or ["8"])[0] or 8)
+            html = render_similarity_eval_page(page=page, batch_size=batch_size)
+            self._send_html(html)
+            return
+
+        if path == "/embedding-eval/index.html":
+            html = render_similarity_eval_page()
+            self._send_html(html)
+            return
+
+        else:
             self.send_error(404)
             return
-        html = render_present_dashboard(interactive=True)
-        self._send_html(html)
 
     def do_POST(self) -> None:
-        if self.path != "/action":
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/embedding-eval/action":
+            length = int(self.headers.get("Content-Length", "0") or 0)
+            payload = self.rfile.read(length).decode("utf-8")
+            params = parse_qs(payload)
+            left_id = (params.get("left_id") or [""])[0].strip()
+            right_id = (params.get("right_id") or [""])[0].strip()
+            decision = (params.get("decision") or [""])[0].strip()
+            page = int((params.get("page") or ["1"])[0] or 1)
+            batch_size = int((params.get("batch_size") or ["8"])[0] or 8)
+
+            if not left_id or not right_id or not decision:
+                html = render_similarity_eval_page(
+                    page=page,
+                    batch_size=batch_size,
+                    action_message="Embedding-Eval fehlgeschlagen: IDs oder Entscheidung fehlen.",
+                )
+                self._send_html(html, status=400)
+                return
+
+            try:
+                record_similarity_decision(left_id, right_id, decision)
+                messages = {
+                    "merge_ok": "Paar als gleicher Job markiert.",
+                    "not_same_job": "Paar als unterschiedliche Jobs markiert.",
+                    "unclear": "Paar als unsicher markiert.",
+                }
+                html = render_similarity_eval_page(
+                    page=page,
+                    batch_size=batch_size,
+                    action_message=messages.get(decision, "Entscheidung gespeichert."),
+                )
+                self._send_html(html)
+            except Exception as exc:
+                html = render_similarity_eval_page(
+                    page=page,
+                    batch_size=batch_size,
+                    action_message=f"Embedding-Eval fehlgeschlagen: {exc}",
+                )
+                self._send_html(html, status=500)
+            return
+
+        if path != "/action":
             self.send_error(404)
             return
 

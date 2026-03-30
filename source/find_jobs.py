@@ -142,6 +142,38 @@ def clean_company_name(company: str) -> str:
     return cleaned.strip(" -|:")
 
 
+def infer_company_name(
+    company: str,
+    *,
+    title: str = "",
+    description: str = "",
+    source: str = "",
+) -> str:
+    cleaned = clean_company_name(company or "")
+    if cleaned:
+        return cleaned
+
+    text = html.unescape((description or "").strip())
+    if not text:
+        return ""
+
+    patterns = [
+        r"\bAt\s+([A-Z][A-Za-z0-9&+.'’\- ]{1,60}?),\s+we(?:['’]?re|\s+are)\b",
+        r"\bAs an?\s+.+?\s+at\s+([A-Z][A-Za-z0-9&+.'’\- ]{1,60}?),\s+you\b",
+        r"\bAs\s+[A-Z][A-Za-z0-9/&+.'’\- ]+\s+at\s+([A-Z][A-Za-z0-9&+.'’\- ]{1,60}?),\s+you\b",
+        r"\bbei\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöü0-9&+.'’\- ]{1,60}?)(?=[,.]|\s+(?:arbeitest|wirst|ist|sind)\b)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+        if not match:
+            continue
+        candidate = clean_company_name(match.group(1))
+        if candidate and candidate.lower() not in {"company", "unternehmen", "team", "role description"}:
+            return candidate
+
+    return ""
+
+
 def extract_company_from_text(text: str) -> str:
     match = re.search(
         r"Arbeitgeber:\s*(.+?)(?=\s+(?:Arbeitsort:|Anstellungsart:|Beginn\b|Befristung:)|\s+\d+\s*[€EUR]|\s*$)",
@@ -171,10 +203,16 @@ def make_job(
     discovery_url = normalize_job_url(discovery_url or raw_url, source=source)
     apply_url = normalize_job_url(apply_url or raw_url, source=source)
     canonical_url = normalize_job_url(raw_url, source=source)
+    company_value = infer_company_name(
+        company,
+        title=title,
+        description=description,
+        source=source,
+    )
     return {
         "id":          job_id(canonical_url or raw_url),
         "title":       clean_job_title(title),
-        "company":     clean_company_name(company),
+        "company":     company_value,
         "location":    location.strip(),
         "url":         canonical_url,
         "discovery_url": discovery_url,

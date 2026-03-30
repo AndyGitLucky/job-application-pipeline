@@ -62,7 +62,9 @@ Stattdessen:
 - Nachladen reichhaltiger Detailbeschreibungen fuer duenne Funde
 - LLM-Scoring mit Kandidatenprofil und Retrieval-Kontext
 - Feedback-Loop aus echten Review-Entscheidungen zur spaeteren Ranking-Anpassung
+- erste Job-Semantik-Schicht fuer aehnliche Rollen, Duplicate-Hinweise und spaeteres Profil-Matching
 - lokale Review-UI mit Statusaktionen und Reject-Grundchips
+- getrennte Embedding-Eval-Ansicht fuer manuelle Similarity-Pruefung
 - Generierung von Bewerbungsordnern direkt aus der UI
 - stabile Cover-Letter-PDFs mit zentralem Ablageort plus lokale Kopie im Bewerbungsordner
 - Speicherung manueller Kontakte fuer spaetere Wiederverwendung
@@ -167,6 +169,7 @@ Noch bewusst nicht perfekt:
 - Anti-Bot / Captcha verhindert Vollautomation
 - einzelne Datenquellen und Textpfade brauchen noch weiteres Polishing
 - manche Jobboards sollten noch konsequenter nur als Discovery behandelt werden
+- semantische Job-Aehnlichkeit ist jetzt als erster Layer vorhanden, aber noch bewusst nicht fuer automatisches Merge freigeschaltet
 
 ## Quickstart
 

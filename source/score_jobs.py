@@ -20,6 +20,7 @@ if __package__ in {None, ""}:
 from source.candidate_profile import PROFILE_TEXT
 from source.decision_engine import prepare_job_decision
 from source.feedback_learning import feedback_delta_for_job, refresh_feedback_summary
+from source.job_embedding_store import annotate_job_similarity
 from source.job_buckets import classify_job
 from source.llm_client import llm_complete
 from source.pipeline_state_manager import (
@@ -263,6 +264,17 @@ def score_jobs(input_file: str | None = None, output_file: str | None = None) ->
             job["company"][:25],
             job.get("final_bucket", job["decision"]),
         )
+
+    try:
+        store = annotate_job_similarity(jobs, min_score=CONFIG["min_score"])
+        output_path.write_text(json.dumps(jobs, ensure_ascii=False, indent=2), encoding="utf-8")
+        log.info(
+            "Job-Semantik aktualisiert: %s gute Jobs im Store (%s)",
+            store.get("count", 0),
+            store.get("provider", "disabled"),
+        )
+    except Exception as exc:
+        log.warning("Job-Semantik konnte nicht aktualisiert werden: %s", exc)
 
     return recommended
 

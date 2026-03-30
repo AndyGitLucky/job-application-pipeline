@@ -84,6 +84,21 @@ class PrimarySourcesTests(unittest.TestCase):
         self.assertEqual(job["discovery_url"], "https://www.arbeitsagentur.de/jobsuche/jobdetail/12874-123727-S")
         self.assertEqual(job["apply_url"], "https://www.arbeitsagentur.de/jobsuche/jobdetail/12874-123727-S")
 
+    def test_make_job_infers_company_from_indeed_description(self):
+        job = make_job(
+            title="ML Engineer",
+            company="",
+            location="München",
+            url="https://de.indeed.com/viewjob?jk=abc",
+            description=(
+                "About us\n\n"
+                "At Pruna, we're on a mission to make AI more efficient.\n\n"
+                "As an ML Engineer at Pruna AI, you will bridge the gap between research and application."
+            ),
+            source="indeed",
+        )
+        self.assertEqual(job["company"], "Pruna")
+
     def test_matches_company_search_term_accepts_partial_overlap(self):
         self.assertTrue(_matches_company_search_term("AI Engineer", "Senior AI Platform Engineer", "Informatik / Vollzeit"))
         self.assertFalse(_matches_company_search_term("AI Engineer", "Busfahrer*in", "Fahrdienst / Vollzeit"))
