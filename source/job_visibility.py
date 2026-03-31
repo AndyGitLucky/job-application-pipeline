@@ -31,6 +31,7 @@ HIDDEN_DECISIONS = {
 
 HIDDEN_SCORE_STATUSES = {
     "deferred_explore_limit",
+    "deferred_normal_limit",
 }
 
 

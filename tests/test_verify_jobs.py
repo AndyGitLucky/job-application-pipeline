@@ -64,6 +64,49 @@ class VerifyJobsTests(unittest.TestCase):
             self.assertEqual(learned_sources[0]["type"], "recruitee")
             self.assertEqual(learned_sources[0]["subdomain"], "demo")
 
+    def test_verify_jobs_rejects_generic_company_page_resolution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            jobs_path = Path(tmp) / "jobs_scored.json"
+            jobs_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "job2",
+                            "title": "Data Engineers, Analysts & Scientists (w|m|d)",
+                            "company": "BridgingIT GmbH",
+                            "url": "https://www.arbeitsagentur.de/jobsuche/jobdetail/123",
+                            "description": "Some text",
+                            "recommended": True,
+                            "score": 8,
+                            "decision": "apply",
+                            "job_status": "live",
+                            "listing_status": "jobboard_listing",
+                            "apply_path_status": "unresolved",
+                            "final_bucket": "needs_review",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            with patch(
+                "source.verify_jobs.resolve_company_apply_url",
+                return_value=SimpleNamespace(
+                    url="https://www.bridging-it.de/karriere/das-bietet-bridgingit/",
+                    source="html",
+                    failure_type="",
+                    detail="",
+                    http_status=200,
+                ),
+            ):
+                verified = vj.verify_jobs(str(jobs_path), str(jobs_path), limit=5)
+
+            jobs = json.loads(jobs_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(verified), 1)
+            self.assertEqual(jobs[0]["verification_status"], "unverified")
+            self.assertEqual(jobs[0]["verification_failure_type"], "generic_company_page")
+            self.assertEqual(jobs[0]["final_bucket"], "needs_review")
+
 
 if __name__ == "__main__":
     unittest.main()

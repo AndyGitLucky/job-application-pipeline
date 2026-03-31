@@ -27,6 +27,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt
 from docx2pdf import convert as docx2pdf_convert
 from source.llm_client import llm_complete
+from source.json_io import load_json_file
 from source.pipeline_state_manager import (
     attach_job_artifact,
     load_pipeline_state,
@@ -137,6 +138,29 @@ def clean_generated_text(text: str) -> str:
     return cleaned.strip()
 
 
+def clean_cover_letter_body(text: str) -> str:
+    cleaned = clean_generated_text(text)
+    paragraphs = [para.strip() for para in re.split(r"\n\s*\n", cleaned) if para.strip()]
+
+    def is_boilerplate(paragraph: str) -> bool:
+        compact = " ".join(paragraph.split())
+        lower = compact.lower()
+        if lower.startswith("betreff:"):
+            return True
+        if lower.startswith("sehr geehrte") or lower.startswith("sehr geehrter") or lower.startswith("sehr geehrtes"):
+            return True
+        if lower.startswith("hallo ") or lower.startswith("liebes ") or lower.startswith("liebe "):
+            return True
+        if lower.startswith("bewerbung als ") and len(compact) <= 140 and compact.count(".") <= 1:
+            return True
+        return False
+
+    while paragraphs and is_boilerplate(paragraphs[0]):
+        paragraphs.pop(0)
+
+    return "\n\n".join(paragraphs).strip()
+
+
 def assert_text_guardrails(text: str, asset_type: str) -> None:
     findings = find_negative_self_disclosure(text)
     if findings and CONFIG["guardrail_block_generation"]:
@@ -159,7 +183,7 @@ def generate_anschreiben(job: dict) -> str:
         description=job["description"][:1500],
         language=language,
     )
-    return clean_generated_text(call_llm(prompt, quality=True))
+    return clean_cover_letter_body(call_llm(prompt, quality=True))
 
 
 def generate_outreach(job: dict, contact_role: str = "Hiring Manager") -> str:
@@ -297,7 +321,10 @@ def generate_applications(
         log.error("Input-Datei nicht gefunden: %s", input_path)
         return []
 
-    jobs = json.loads(input_path.read_text(encoding="utf-8"))
+    jobs = load_json_file(input_path, default=[])
+    if not isinstance(jobs, list):
+        log.error("Input-Datei ist keine Jobliste: %s", input_path)
+        return []
     state = load_pipeline_state()
     sync_jobs(state, jobs, stage="generation")
 

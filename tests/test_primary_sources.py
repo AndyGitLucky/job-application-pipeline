@@ -10,6 +10,7 @@ sys.modules.setdefault("feedparser", types.SimpleNamespace())
 
 from source.find_jobs import (
     _extract_bmw_location,
+    _extract_conrad_location,
     _extract_infineon_location,
     _extract_siemens_location,
     _matches_company_search_term,
@@ -114,6 +115,13 @@ class PrimarySourcesTests(unittest.TestCase):
     def test_extract_bmw_location(self):
         text = "Datum: 23.02.2026 Standort: München, BY, DE, 80809 Unternehmen: BMW Group ARE YOU PREPARED FOR THE FUTURE?"
         self.assertEqual(_extract_bmw_location(text), "München, BY, DE, 80809")
+
+    def test_extract_conrad_location(self):
+        text = (
+            "AI Engineer - Generative AI (m/w/d/pixelhead) fuer unsere Tochterfirma RE-IN "
+            "bei RE-INvent Retail GmbH RE-INvent Retail GmbH Nuernberg Vollzeit Jetzt bewerben"
+        )
+        self.assertEqual(_extract_conrad_location(text, company="RE-INvent Retail GmbH"), "Nuernberg")
 
     def test_enrich_job_description_prefers_richer_detail_text(self):
         from source import find_jobs

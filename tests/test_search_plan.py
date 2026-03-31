@@ -9,8 +9,9 @@ from source.search_plan import build_search_plan
 
 
 class SearchPlanTests(unittest.TestCase):
+    @patch("source.search_plan.rank_roles_for_profile")
     @patch("source.search_plan.load_master_profile")
-    def test_explore_mode_includes_adjacent_terms_from_profile_signals(self, load_master_profile):
+    def test_explore_mode_prefers_semantic_roles(self, load_master_profile, rank_roles_for_profile):
         load_master_profile.return_value = {
             "basics": {"title": "Machine Learning / Data Scientist"},
             "skills": {
@@ -32,13 +33,18 @@ class SearchPlanTests(unittest.TestCase):
             ],
             "certifications_or_topics": ["optimization"],
         }
+        rank_roles_for_profile.return_value = [
+            {"term": "Perception Engineer", "score": 0.91, "strategy": "semantic", "provider": "lexical_fallback"},
+            {"term": "Computer Vision Engineer", "score": 0.87, "strategy": "semantic", "provider": "lexical_fallback"},
+        ]
 
         plan = build_search_plan("explore")
 
         self.assertEqual(plan["mode"], "explore")
+        self.assertEqual(plan["explore_terms"][0], "Perception Engineer")
+        self.assertEqual(plan["terms"][0]["strategy"], "semantic")
+        self.assertGreater(plan["terms"][0]["semantic_score"], 0.8)
         self.assertIn("Data Engineer", plan["explore_terms"])
-        self.assertIn("ML Systems Engineer", plan["explore_terms"])
-        self.assertIn("Decision Scientist", plan["explore_terms"])
         self.assertTrue(all(item["bucket"] == "explore" for item in plan["terms"]))
 
     @patch("source.search_plan.load_master_profile")

@@ -99,6 +99,11 @@ def _load_json_list(path: Path) -> list[dict]:
         return []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8-sig"))
+        except Exception:
+            return []
     except Exception:
         return []
     if not isinstance(data, list):

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from source.profile_store import load_master_profile
+from source.role_library import rank_roles_for_profile
 
 DEFAULT_NORMAL_TERMS = [
     "Data Scientist",
@@ -35,6 +36,7 @@ def build_search_plan(search_mode: str = "normal") -> dict:
     skills = _flatten_skills(profile.get("skills") or {})
     tags = _collect_tags(profile)
     certification_topics = [str(item).strip() for item in profile.get("certifications_or_topics", []) if str(item).strip()]
+    semantic_roles = rank_roles_for_profile(profile, top_k=8)
 
     normal_terms = _unique_terms(
         [
@@ -43,23 +45,45 @@ def build_search_plan(search_mode: str = "normal") -> dict:
             *DEFAULT_NORMAL_TERMS,
         ]
     )[:8]
+    explore_semantic_terms = [item["term"] for item in semantic_roles]
+    heuristic_explore_terms = _unique_terms(_explore_terms_from_signals(skills, tags, certification_topics))
+    default_explore_terms = _unique_terms(DEFAULT_EXPLORE_TERMS)
     explore_terms = _unique_terms(
         [
-            *_explore_terms_from_signals(skills, tags, certification_topics),
-            *DEFAULT_EXPLORE_TERMS,
+            *explore_semantic_terms,
+            *heuristic_explore_terms,
+            *default_explore_terms,
         ]
     )[:8]
 
     if mode == "explore":
-        terms = [{"term": term, "bucket": "explore"} for term in explore_terms]
+        semantic_lookup = {item["term"]: item for item in semantic_roles}
+        heuristic_set = {term.lower() for term in heuristic_explore_terms}
+        terms = []
+        for term in explore_terms:
+            semantic = semantic_lookup.get(term)
+            strategy = "default"
+            if semantic:
+                strategy = "semantic"
+            elif term.lower() in heuristic_set:
+                strategy = "heuristic"
+            terms.append(
+                {
+                    "term": term,
+                    "bucket": "explore",
+                    "strategy": strategy,
+                    "semantic_score": semantic.get("score", 0.0) if semantic else 0.0,
+                }
+            )
     else:
-        terms = [{"term": term, "bucket": "core"} for term in normal_terms]
+        terms = [{"term": term, "bucket": "core", "strategy": "normal", "semantic_score": 0.0} for term in normal_terms]
 
     return {
         "mode": mode,
         "terms": terms,
         "normal_terms": normal_terms,
         "explore_terms": explore_terms,
+        "semantic_roles": semantic_roles,
     }
 
 

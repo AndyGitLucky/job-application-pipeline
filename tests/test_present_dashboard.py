@@ -102,7 +102,7 @@ class PresentDashboardTests(unittest.TestCase):
             out = Path(tmp) / "present_dashboard.html"
             apply_log = Path(tmp) / "apply_log.json"
             raw.write_text(
-                '[{"id":"1","title":"BÃ¼ro Engineer","company":"BÃ¼ro GmbH","location":"MÃ¼nchen","url":"https://example.com/jobs/1","description":"Arbeit im BÃ¼ro â€“ mit echten Daten.","source":"company"}]',
+                '[{"id":"1","title":"BÃƒÂ¼ro Engineer","company":"BÃƒÂ¼ro GmbH","location":"MÃƒÂ¼nchen","url":"https://example.com/jobs/1","description":"Arbeit im BÃƒÂ¼ro Ã¢â‚¬â€œ mit echten Daten.","source":"company"}]',
                 encoding="utf-8",
             )
             scored.write_text(
@@ -118,4 +118,27 @@ class PresentDashboardTests(unittest.TestCase):
             self.assertIn("Büro GmbH", html)
             self.assertIn("München", html)
             self.assertIn("Arbeit im Büro – mit echten Daten.", html)
-            self.assertNotIn("BÃ¼ro", html)
+            self.assertNotIn("BÃƒÂ¼ro", html)
+
+    def test_reads_bom_encoded_scored_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = Path(tmp) / "jobs_raw.json"
+            scored = Path(tmp) / "jobs_scored.json"
+            out = Path(tmp) / "present_dashboard.html"
+            apply_log = Path(tmp) / "apply_log.json"
+            raw.write_text(
+                '[{"id":"1","title":"BOM Job","company":"Demo","location":"Munich","url":"https://example.com/jobs/1","description":"desc","source":"company"}]',
+                encoding="utf-8",
+            )
+            scored.write_text(
+                '[{"id":"1","score":8,"final_bucket":"manual_apply_ready"}]',
+                encoding="utf-8-sig",
+            )
+            apply_log.write_text("{}", encoding="utf-8")
+
+            path = generate_present_dashboard(raw, scored, out, apply_log)
+            html = path.read_text(encoding="utf-8")
+
+            self.assertIn("BOM Job", html)
+            self.assertIn("Jobs Scored", html)
+            self.assertIn(">1<", html)

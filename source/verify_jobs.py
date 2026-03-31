@@ -19,7 +19,11 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from source.ats_handlers import detect_ats
-from source.company_url_resolver import resolve_company_apply_url
+from source.company_url_resolver import (
+    looks_like_known_ats_url,
+    looks_like_specific_company_apply_url,
+    resolve_company_apply_url,
+)
 from source.job_buckets import classify_job
 from source.pipeline_state_manager import (
     load_pipeline_state,
@@ -73,11 +77,41 @@ def verify_jobs(
             continue
         update_job_stage(state, job_id, "verification", "in_progress", message="verification_started")
         try:
-            resolved = resolve_company_apply_url(job.get("url", ""), job.get("description", ""))
+            resolved = resolve_company_apply_url(
+                job.get("url", ""),
+                job.get("description", ""),
+                company=job.get("company", ""),
+                title=job.get("title", ""),
+            )
             if resolved.url:
+                resolved_ats_type = detect_ats(resolved.url)
+                if not (
+                    looks_like_known_ats_url(resolved.url)
+                    or looks_like_specific_company_apply_url(resolved.url, job.get("title", ""))
+                ):
+                    job.setdefault("verification_status", "unverified")
+                    job["verification_note"] = "generic_company_page"
+                    job["verification_failure_type"] = "generic_company_page"
+                    job["verification_detail"] = resolved.url
+                    job["verification_http_status"] = int(resolved.http_status or 0)
+                    update_job_stage(
+                        state,
+                        job_id,
+                        "verification",
+                        "completed",
+                        message="generic_company_page",
+                        extras={
+                            "verification_status": job.get("verification_status", "unverified"),
+                            "verification_failure_type": "generic_company_page",
+                            "verification_http_status": int(resolved.http_status or 0),
+                        },
+                    )
+                    job.update(classify_job(job))
+                    verified.append(job)
+                    continue
                 job["url_company"] = resolved.url
                 job["url_company_source"] = resolved.source
-                job["ats_type"] = detect_ats(resolved.url)
+                job["ats_type"] = resolved_ats_type
                 learned = remember_primary_source(
                     resolved.url,
                     company=job.get("company", ""),

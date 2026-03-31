@@ -10,6 +10,31 @@ from source import generate_application as ga
 
 
 class GenerateApplicationSelectionTests(unittest.TestCase):
+    def test_clean_cover_letter_body_removes_subject_and_salutation_boilerplate(self):
+        text = (
+            "Betreff: Bewerbung als AI Forward Deployed Engineer (m/w/d)\n\n"
+            "Sehr geehrtes CANCOM-Team,\n\n"
+            "Ich bringe relevante Erfahrung mit.\n\n"
+            "- Punkt eins\n- Punkt zwei"
+        )
+
+        cleaned = ga.clean_cover_letter_body(text)
+
+        self.assertNotIn("Betreff:", cleaned)
+        self.assertNotIn("Sehr geehrtes", cleaned)
+        self.assertTrue(cleaned.startswith("Ich bringe relevante Erfahrung mit."))
+
+    def test_clean_cover_letter_body_removes_title_like_heading(self):
+        text = (
+            "Bewerbung als AI Forward Deployed Engineer bei CANCOM SE\n\n"
+            "CANCOM gestaltet IT-Lösungen mit echtem Mehrwert."
+        )
+
+        cleaned = ga.clean_cover_letter_body(text)
+
+        self.assertNotIn("Bewerbung als AI Forward Deployed Engineer", cleaned)
+        self.assertEqual(cleaned, "CANCOM gestaltet IT-Lösungen mit echtem Mehrwert.")
+
     def test_cover_letter_pdf_path_uses_central_directory_and_stable_prefix(self):
         with tempfile.TemporaryDirectory() as tmp:
             original_dir = ga.CONFIG["cover_letter_dir"]
@@ -123,6 +148,47 @@ class GenerateApplicationSelectionTests(unittest.TestCase):
             self.assertTrue(local_pdf.exists())
             self.assertEqual(local_pdf.name, "anschreiben.pdf")
             self.assertIn("Cover Letters", str(central_pdf))
+
+    def test_generate_applications_reads_bom_encoded_jobs_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            jobs_path = tmp_path / "jobs_scored.json"
+            output_dir = tmp_path / "applications"
+            cover_dir = tmp_path / "Cover Letters"
+            jobs = [
+                {
+                    "id": "apply1",
+                    "title": "Apply Job",
+                    "company": "Demo",
+                    "url": "https://example.com/apply",
+                    "description": "Strong fit",
+                    "recommended": True,
+                    "score": 8,
+                    "decision": "apply",
+                    "final_bucket": "manual_apply_ready",
+                    "job_status": "live",
+                }
+            ]
+            jobs_path.write_text(json.dumps(jobs), encoding="utf-8-sig")
+
+            original_call_llm = ga.call_llm
+            original_pdf = ga.save_docx_as_pdf
+            original_output_dir = ga.CONFIG["output_dir"]
+            original_cover_dir = ga.CONFIG["cover_letter_dir"]
+            try:
+                ga.CONFIG["output_dir"] = str(output_dir)
+                ga.CONFIG["cover_letter_dir"] = str(cover_dir)
+                ga.call_llm = lambda prompt, quality=False: "Testtext"
+                ga.save_docx_as_pdf = lambda docx_path, pdf_path: pdf_path.write_text("pdf", encoding="utf-8")
+                generated = ga.generate_applications(str(jobs_path), limit=10)
+            finally:
+                ga.call_llm = original_call_llm
+                ga.save_docx_as_pdf = original_pdf
+                ga.CONFIG["output_dir"] = original_output_dir
+                ga.CONFIG["cover_letter_dir"] = original_cover_dir
+
+            self.assertEqual(len(generated), 1)
+            self.assertEqual(generated[0]["id"], "apply1")
 
 
 if __name__ == "__main__":

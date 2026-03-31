@@ -7,6 +7,7 @@ from pathlib import Path
 from source.feedback_store import record_feedback
 from source.feedback_learning import refresh_feedback_summary
 from source.generate_application import generate_applications
+from source.json_io import load_json_file
 from source.pipeline_state_manager import (
     load_pipeline_state,
     save_pipeline_state,
@@ -23,9 +24,8 @@ SCORED_JOBS_PATH = runtime_path("jobs_scored.json")
 
 
 def _job_feedback_context(job_id: str) -> dict:
-    try:
-        jobs = json.loads(Path(SCORED_JOBS_PATH).read_text(encoding="utf-8"))
-    except Exception:
+    jobs = load_json_file(SCORED_JOBS_PATH, default=[])
+    if not isinstance(jobs, list):
         return {}
     for job in jobs:
         if str(job.get("id") or "") == str(job_id):
@@ -146,9 +146,8 @@ def perform_ui_action(job_id: str, action: str, note: str = "") -> str:
 def _write_apply_log(job_id: str, *, status: str, method: str, note: str) -> None:
     path = Path(APPLY_LOG_PATH)
     if path.exists():
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+        data = load_json_file(path, default={})
+        if not isinstance(data, dict):
             data = {}
     else:
         data = {}

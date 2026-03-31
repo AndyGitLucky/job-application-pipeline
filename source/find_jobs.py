@@ -354,7 +354,7 @@ def source_rank(job: dict) -> int:
     source = (job.get("source") or "").strip().lower()
     if source in {"greenhouse", "lever", "recruitee"}:
         return 6
-    if source in {"infineon", "siemens_energy", "swm"} or source.startswith("direct_"):
+    if source in {"infineon", "siemens_energy", "swm", "bmw", "conrad"} or source.startswith("direct_"):
         return 5
     if source == "arbeitsagentur":
         return 4
@@ -1060,6 +1060,8 @@ def fetch_company_search_source(source: dict, term: str) -> list:
         return fetch_infineon_portal(source, term)
     if source_type == "bmw_portal":
         return fetch_bmw_portal(source, term)
+    if source_type == "conrad_portal":
+        return fetch_conrad_portal(source, term)
 
     if search_mode != "onsite_search":
         log.warning("  Unbekannter search_mode=%r fuer %s", search_mode, company)
@@ -1270,6 +1272,72 @@ def fetch_bmw_portal(source: dict, term: str) -> list:
     return jobs
 
 
+def fetch_conrad_portal(source: dict, term: str) -> list:
+    base_url = (source.get("url") or "https://career.conrad.com/de").strip()
+    listing_url = requests.compat.urljoin(base_url, "/stellenangebote.html")
+    company = source.get("company") or "Conrad"
+    location_override = source.get("location") or CONFIG["location"]
+
+    try:
+        r = requests.get(listing_url, headers=CONFIG["headers"], timeout=20)
+        r.raise_for_status()
+    except Exception as exc:
+        log.warning("  Conrad Fehler (%s): %s", company, exc)
+        return []
+
+    soup = BeautifulSoup(r.text, "lxml")
+    candidate_urls = []
+    for anchor in soup.select("a[href]"):
+        href = (anchor.get("href") or "").strip()
+        if not href:
+            continue
+        detail_url = requests.compat.urljoin(listing_url, href)
+        lowered = detail_url.lower()
+        if not lowered.startswith("https://career.conrad.com/"):
+            continue
+        if "-de-j" not in lowered:
+            continue
+        candidate_urls.append(detail_url)
+
+    ranked_urls = list(dict.fromkeys(candidate_urls))
+    if term:
+        tokens = _term_tokens(term)
+
+        def score(url: str) -> tuple[int, str]:
+            lowered = url.lower()
+            token_hits = sum(1 for token in tokens if token in lowered)
+            return (-token_hits, lowered)
+
+        ranked_urls = sorted(ranked_urls, key=score)
+
+    jobs = []
+    for detail_url in ranked_urls[:40]:
+        detail = fetch_conrad_job_detail(detail_url)
+        title = detail.get("title", "").strip()
+        description = detail.get("description", "").strip()
+        if not title:
+            continue
+        if not _matches_company_search_term(term, title, description):
+            continue
+        jobs.append(
+            make_job(
+                title=title,
+                company=detail.get("company", "").strip() or company,
+                location=detail.get("location", "").strip() or location_override,
+                url=detail_url,
+                description=description or title,
+                source="conrad",
+                discovery_url=listing_url,
+                apply_url=detail.get("apply_url", "").strip() or detail_url,
+                source_url_type="company_career_page",
+                apply_url_type="company_career_page",
+            )
+        )
+
+    log.info("  â†’ %s Conrad-Jobs gefunden", len(jobs))
+    return jobs
+
+
 def discover_bmw_job_urls(base_url: str, term: str = "") -> list[str]:
     cache = _load_json_cache(CONFIG["bmw_url_cache_file"])
     cache_key = (base_url or "").strip() or "https://jobs.bmwgroup.com/"
@@ -1402,6 +1470,49 @@ def fetch_bmw_job_detail(url: str) -> dict:
     }
     _save_json_cache(CONFIG["bmw_detail_cache_file"], cache)
     return detail
+
+
+def fetch_conrad_job_detail(url: str) -> dict:
+    try:
+        r = requests.get(url, headers=CONFIG["headers"], timeout=15)
+        r.raise_for_status()
+    except Exception:
+        return {}
+
+    soup = BeautifulSoup(r.text, "lxml")
+    title = ""
+    title_el = soup.select_one("h1")
+    if title_el:
+        title = title_el.get_text(" ", strip=True)
+
+    page_title = (soup.title.get_text(" ", strip=True) if soup.title else "").strip()
+    if not title:
+        title = re.sub(r"^\s*Stellenangebot\s+", "", page_title, flags=re.IGNORECASE).strip()
+        title = re.sub(r"\s+bei\s+.+$", "", title, flags=re.IGNORECASE).strip()
+
+    company = ""
+    title_match = re.search(r"\bbei\s+(.+)$", page_title, flags=re.IGNORECASE)
+    if title_match:
+        company = title_match.group(1).strip(" |,-")
+
+    text = _html_to_text(soup.get_text(separator=" ", strip=True)[:20000])
+    apply_url = url
+    for anchor in soup.select("a[href]"):
+        label = anchor.get_text(" ", strip=True).lower()
+        href = (anchor.get("href") or "").strip()
+        if not href:
+            continue
+        if "bewerben" in label or "apply" in label:
+            apply_url = requests.compat.urljoin(url, href)
+            break
+
+    return {
+        "title": title,
+        "company": company,
+        "description": text,
+        "location": _extract_conrad_location(text, company=company),
+        "apply_url": apply_url,
+    }
 
 
 def _rank_bmw_urls_for_term(urls: list[str], term: str) -> list[str]:
@@ -1555,6 +1666,34 @@ def _extract_bmw_location(text: str) -> str:
         if match:
             return match.group(1).strip(" ,;-")
     return ""
+
+
+def _extract_conrad_location(text: str, company: str = "") -> str:
+    haystack = " ".join((text or "").split())
+    company = (company or "").strip()
+    if company:
+        company_pattern = re.escape(company)
+        for pattern in [
+            rf"{company_pattern}\s+(.+?)(?=\s+(?:Vollzeit|Teilzeit|Praktikum|Werkstudent|Befristet|Unbefristet|Hybrid|Remote)\b|$)",
+            rf"{company_pattern}\s+(.+?)(?=\s+Jetzt\s+bewerben\b|$)",
+        ]:
+            match = re.search(pattern, haystack, flags=re.IGNORECASE)
+            if match:
+                candidate = match.group(1).strip(" ,;-")
+                if company and candidate.lower().startswith(company.lower()):
+                    candidate = candidate[len(company):].strip(" ,;-")
+                if candidate and len(candidate) <= 80:
+                    return candidate
+
+    for pattern in [
+        r"Standort\s*[:\-]?\s*(.+?)(?=\s+(?:Vollzeit|Teilzeit|Praktikum|Werkstudent|Befristet|Unbefristet|Hybrid|Remote|Jetzt\s+bewerben)\b|$)",
+        r"Arbeitsort\s*[:\-]?\s*(.+?)(?=\s+(?:Vollzeit|Teilzeit|Praktikum|Werkstudent|Befristet|Unbefristet|Hybrid|Remote|Jetzt\s+bewerben)\b|$)",
+    ]:
+        match = re.search(pattern, haystack, flags=re.IGNORECASE)
+        if match:
+            return match.group(1).strip(" ,;-")
+    return ""
+
 
 def fetch_primary_source(source: dict) -> list:
     source_type = (source.get("type") or "").strip().lower()
@@ -1724,6 +1863,8 @@ def _annotate_jobs_with_search_context(
     search_term: str = "",
     search_bucket: str = "",
     search_origin: str = "",
+    search_strategy: str = "",
+    search_semantic_score: float = 0.0,
 ) -> list[dict]:
     annotated = []
     for job in jobs:
@@ -1732,6 +1873,8 @@ def _annotate_jobs_with_search_context(
         updated["search_term"] = (search_term or "").strip()
         updated["search_term_bucket"] = (search_bucket or "").strip()
         updated["search_origin"] = (search_origin or "").strip()
+        updated["search_strategy"] = (search_strategy or "").strip()
+        updated["search_semantic_score"] = round(float(search_semantic_score or 0.0), 4)
         annotated.append(updated)
     return annotated
 
@@ -1743,9 +1886,10 @@ def _fallback_search_plan(search_mode: str) -> dict:
     bucket = "explore" if mode == "explore" else "core"
     return {
         "mode": mode,
-        "terms": [{"term": term, "bucket": bucket} for term in CONFIG["search_terms"]],
+        "terms": [{"term": term, "bucket": bucket, "strategy": "fallback", "semantic_score": 0.0} for term in CONFIG["search_terms"]],
         "normal_terms": list(CONFIG["search_terms"]),
         "explore_terms": list(CONFIG["search_terms"]),
+        "semantic_roles": [],
     }
 
 
@@ -1766,7 +1910,16 @@ def find_jobs(search_mode: str = "normal") -> list:
     if terms:
         log.info(
             "Suchplan: %s",
-            ", ".join(f"{item.get('term', '')} [{item.get('bucket', 'core')}]" for item in terms),
+            ", ".join(
+                f"{item.get('term', '')} [{item.get('bucket', 'core')}/{item.get('strategy', 'plain')}]"
+                for item in terms
+            ),
+        )
+    semantic_roles = search_plan.get("semantic_roles", [])
+    if semantic_roles and mode == "explore":
+        log.info(
+            "Semantische Rollen: %s",
+            ", ".join(f"{item.get('term', '')} ({item.get('score', 0.0):.2f})" for item in semantic_roles[:5]),
         )
 
     primary_sources = load_primary_sources()
@@ -1784,6 +1937,8 @@ def find_jobs(search_mode: str = "normal") -> list:
     for item in terms:
         term = str(item.get("term") or "").strip()
         bucket = str(item.get("bucket") or "core").strip().lower() or "core"
+        strategy = str(item.get("strategy") or "").strip().lower() or "plain"
+        semantic_score = float(item.get("semantic_score") or 0.0)
         if not term:
             continue
         for company_source in company_search_sources:
@@ -1793,6 +1948,8 @@ def find_jobs(search_mode: str = "normal") -> list:
                 search_term=term,
                 search_bucket=bucket,
                 search_origin="company_search",
+                search_strategy=strategy,
+                search_semantic_score=semantic_score,
             )
             time.sleep(CONFIG["request_delay"])
 
@@ -1802,6 +1959,8 @@ def find_jobs(search_mode: str = "normal") -> list:
             search_term=term,
             search_bucket=bucket,
             search_origin="jobspy",
+            search_strategy=strategy,
+            search_semantic_score=semantic_score,
         )
         time.sleep(CONFIG["request_delay"])
 
@@ -1811,6 +1970,8 @@ def find_jobs(search_mode: str = "normal") -> list:
             search_term=term,
             search_bucket=bucket,
             search_origin="arbeitsagentur",
+            search_strategy=strategy,
+            search_semantic_score=semantic_score,
         )
         time.sleep(CONFIG["request_delay"])
 
@@ -1820,6 +1981,8 @@ def find_jobs(search_mode: str = "normal") -> list:
             search_term=term,
             search_bucket=bucket,
             search_origin="stepstone",
+            search_strategy=strategy,
+            search_semantic_score=semantic_score,
         )
         time.sleep(CONFIG["request_delay"])
 

@@ -41,7 +41,8 @@ CONFIG = {
     "min_score": 6,
     "request_delay": 0.5,
     "filter_degree_required": False,
-    "explore_new_job_limit": 20,
+    "normal_new_job_limit": 25,
+    "explore_new_job_limit": 25,
 }
 
 CANDIDATE_PROFILE = PROFILE_TEXT
@@ -155,6 +156,7 @@ def score_jobs(
     output_file: str | None = None,
     *,
     search_mode: str = "normal",
+    normal_new_job_limit: int | None = None,
     explore_new_job_limit: int | None = None,
 ) -> list:
     input_path = resolve_runtime_path(input_file or CONFIG["input_file"])
@@ -176,6 +178,7 @@ def score_jobs(
             for key, value in existing.items():
                 if key not in {"description", "url", "title", "company", "location", "source", "date"}:
                     job[key] = value
+        _apply_pre_score_learning(job, feedback_summary, mode=mode)
     log.info("Lade %s Jobs aus %s", len(jobs), input_path)
 
     state = load_pipeline_state()
@@ -203,21 +206,43 @@ def score_jobs(
         log.info("%s Jobs bereits bewertet, werden uebernommen", already_scored)
     selected_to_score = list(to_score)
     deferred_jobs: list[dict] = []
-    if mode == "explore":
-        explore_limit = max(0, int(explore_new_job_limit or CONFIG["explore_new_job_limit"]))
-        selected_to_score = _prioritize_explore_jobs(to_score)[:explore_limit]
+    if mode in {"normal", "explore"}:
+        mode_limit = (
+            max(0, int(explore_new_job_limit or CONFIG["explore_new_job_limit"]))
+            if mode == "explore"
+            else max(0, int(normal_new_job_limit or CONFIG["normal_new_job_limit"]))
+        )
+        prioritizer = _prioritize_explore_jobs if mode == "explore" else _prioritize_normal_jobs
+        prioritized_jobs = prioritizer(to_score)
+        selected_to_score = prioritized_jobs[:mode_limit]
         selected_ids = {str(job.get("id") or "") for job in selected_to_score}
-        deferred_jobs = [job for job in to_score if str(job.get("id") or "") not in selected_ids]
+        deferred_jobs = [job for job in prioritized_jobs if str(job.get("id") or "") not in selected_ids]
+        _attach_pre_score_selection_metadata(
+            prioritized_jobs,
+            selected_ids=selected_ids,
+            mode=mode,
+            mode_limit=mode_limit,
+        )
         for job in deferred_jobs:
-            job["score_status"] = "deferred_explore_limit"
+            job["score_status"] = f"deferred_{mode}_limit"
             job["scoring_error"] = ""
             job["recommended"] = False
-            job["explore_deferred"] = True
+            job["explore_deferred"] = mode == "explore"
+            job["normal_deferred"] = mode == "normal"
+        _log_pre_score_selection_report(
+            prioritized_jobs,
+            selected_to_score,
+            deferred_jobs,
+            mode=mode,
+            mode_limit=mode_limit,
+        )
         if deferred_jobs:
             log.info(
-                "Explore-Modus: %s neue Jobs werden bewertet, %s bleiben vorerst im Explore-Backlog",
+                "%s-Modus: %s neue Jobs werden bewertet, %s bleiben vorerst im %s-Backlog",
+                mode.capitalize(),
                 len(selected_to_score),
                 len(deferred_jobs),
+                mode,
             )
     log.info("%s Jobs werden bewertet", len(selected_to_score))
 
@@ -308,15 +333,33 @@ def score_jobs(
 
 
 def _prioritize_explore_jobs(jobs: list[dict]) -> list[dict]:
-    def sort_key(job: dict) -> tuple[int, int, int, int, str]:
+    def sort_key(job: dict) -> tuple[float, int, int, float, int, int, str]:
+        bucket = str(job.get("search_term_bucket") or "").strip().lower()
+        origin = str(job.get("search_origin") or "").strip().lower()
+        source = str(job.get("source") or "").strip().lower()
+        strategy = str(job.get("search_strategy") or "").strip().lower()
+        semantic_score = float(job.get("search_semantic_score") or 0.0)
+        pre_score_rank = float(job.get("pre_score_rank") or 0.0)
+        bucket_rank = 0 if bucket == "explore" else 1
+        strategy_rank = 0 if strategy == "semantic" else 1
+        origin_rank = 0 if origin in {"jobspy", "arbeitsagentur", "stepstone", "company_search"} else 1
+        source_rank = 0 if source not in {"greenhouse", "lever", "recruitee"} else 1
+        return (-pre_score_rank, bucket_rank, strategy_rank, -semantic_score, origin_rank, source_rank, str(job.get("title") or ""))
+
+    return sorted(jobs, key=sort_key)
+
+
+def _prioritize_normal_jobs(jobs: list[dict]) -> list[dict]:
+    def sort_key(job: dict) -> tuple[float, int, int, int, int, str]:
         bucket = str(job.get("search_term_bucket") or "").strip().lower()
         origin = str(job.get("search_origin") or "").strip().lower()
         source = str(job.get("source") or "").strip().lower()
         description_length = len(str(job.get("description") or ""))
-        bucket_rank = 0 if bucket == "explore" else 1
-        origin_rank = 0 if origin in {"jobspy", "arbeitsagentur", "stepstone", "company_search"} else 1
-        source_rank = 0 if source not in {"greenhouse", "lever", "recruitee"} else 1
-        return (bucket_rank, origin_rank, source_rank, -description_length, str(job.get("title") or ""))
+        pre_score_rank = float(job.get("pre_score_rank") or 0.0)
+        bucket_rank = 0 if bucket in {"core", "primary", "direct"} else 1
+        origin_rank = 0 if origin in {"company_search", "primary_source", "direct_source", "arbeitsagentur"} else 1
+        source_rank = 0 if source in {"bmw", "infineon", "siemens_energy", "swm", "arbeitsagentur"} else 1
+        return (-pre_score_rank, bucket_rank, origin_rank, source_rank, -description_length, str(job.get("title") or ""))
 
     return sorted(jobs, key=sort_key)
 
@@ -328,6 +371,143 @@ def _apply_feedback_learning(job: dict, feedback_summary: dict) -> None:
     job["feedback_delta"] = delta
     job["feedback_signals"] = signals
     job["ranking_score"] = ranking_score
+
+
+def _apply_pre_score_learning(job: dict, feedback_summary: dict, *, mode: str) -> None:
+    score, signals = pre_score_job(job, feedback_summary=feedback_summary, mode=mode)
+    job["pre_score_rank"] = score
+    job["pre_score_signals"] = signals
+
+
+def _attach_pre_score_selection_metadata(
+    prioritized_jobs: list[dict],
+    *,
+    selected_ids: set[str],
+    mode: str,
+    mode_limit: int,
+) -> None:
+    for rank, job in enumerate(prioritized_jobs, start=1):
+        selected = str(job.get("id") or "") in selected_ids
+        job["pre_score_selection_mode"] = mode
+        job["pre_score_selection_rank"] = rank
+        job["pre_score_selection_limit"] = mode_limit
+        job["pre_score_selection_status"] = "selected" if selected else "deferred"
+        job["pre_score_selection_reason"] = " | ".join(job.get("pre_score_signals") or [])
+
+
+def _log_pre_score_selection_report(
+    prioritized_jobs: list[dict],
+    selected_jobs: list[dict],
+    deferred_jobs: list[dict],
+    *,
+    mode: str,
+    mode_limit: int,
+) -> None:
+    if not prioritized_jobs:
+        return
+    log.info(
+        "%s pre-score selection: %s candidates ranked, top %s selected for LLM",
+        mode.capitalize(),
+        len(prioritized_jobs),
+        min(mode_limit, len(prioritized_jobs)),
+    )
+
+    def emit(label: str, jobs: list[dict]) -> None:
+        if not jobs:
+            return
+        log.info("  %s:", label)
+        for job in jobs[:5]:
+            log.info(
+                "    #%s pre=%.2f | %s @ %s | %s",
+                job.get("pre_score_selection_rank", "-"),
+                float(job.get("pre_score_rank") or 0.0),
+                _safe_log_text(job.get("title"), 55),
+                _safe_log_text(job.get("company"), 28),
+                _safe_log_text(" | ".join(job.get("pre_score_signals") or []), 140),
+            )
+
+    emit("Selected for scoring", selected_jobs)
+    emit("Deferred by budget", deferred_jobs)
+
+
+def pre_score_job(job: dict, *, feedback_summary: dict, mode: str) -> tuple[float, list[str]]:
+    score = 0.0
+    signals: list[str] = []
+
+    link_quality = str(job.get("best_link_quality") or "").strip().lower()
+    if link_quality == "high":
+        score += 3.0
+        signals.append("link:high")
+    elif link_quality == "medium":
+        score += 2.0
+        signals.append("link:medium")
+    elif link_quality == "low":
+        score += 0.5
+        signals.append("link:low")
+
+    link_kind = str(job.get("best_link_kind") or "").strip().lower()
+    if link_kind in {"direct_apply", "company_detail", "captcha_then_company_apply"}:
+        score += 2.0
+        signals.append(f"kind:{link_kind}")
+    elif link_kind in {"manual_contact_gate", "secondary_apply_platform"}:
+        score += 1.2
+        signals.append(f"kind:{link_kind}")
+    elif link_kind == "discovery_only":
+        score -= 0.6
+        signals.append("kind:discovery_only")
+
+    description_quality = str(job.get("description_quality") or "").strip().lower()
+    if description_quality == "high":
+        score += 2.0
+        signals.append("desc:high")
+    elif description_quality == "medium":
+        score += 1.0
+        signals.append("desc:medium")
+
+    source = str(job.get("source") or "").strip().lower()
+    if source in {"bmw", "infineon", "siemens_energy", "swm", "conrad"}:
+        score += 1.8
+        signals.append(f"source:{source}")
+    elif source == "arbeitsagentur":
+        score += 1.2
+        signals.append("source:arbeitsagentur")
+
+    location = str(job.get("location") or "").strip().lower()
+    if any(token in location for token in ("münchen", "muenchen", "munich")):
+        score += 1.0
+        signals.append("location:munich")
+
+    bucket = str(job.get("search_term_bucket") or "").strip().lower()
+    strategy = str(job.get("search_strategy") or "").strip().lower()
+    semantic_score = float(job.get("search_semantic_score") or 0.0)
+
+    if mode == "explore":
+        if bucket == "explore":
+            score += 1.0
+            signals.append("bucket:explore")
+        if strategy == "semantic":
+            score += 1.2
+            signals.append("strategy:semantic")
+        elif strategy == "heuristic":
+            score += 0.4
+            signals.append("strategy:heuristic")
+        score += min(1.5, semantic_score * 2.0)
+        if semantic_score:
+            signals.append(f"semantic:{round(semantic_score, 3)}")
+    else:
+        if bucket in {"core", "primary", "direct"}:
+            score += 1.5
+            signals.append(f"bucket:{bucket}")
+        elif bucket == "explore":
+            score -= 2.0
+            signals.append("bucket:explore")
+
+    feedback_delta, _ = feedback_delta_for_job(job, feedback_summary)
+    if feedback_delta:
+        score += feedback_delta * 0.5
+        signals.append(f"feedback:{round(feedback_delta, 2)}")
+
+    return (round(score, 2), signals)
 
 
 def _load_preserved_scores(output_path: Path) -> dict[str, dict]:

@@ -44,6 +44,17 @@
     "notes": "BMW job portal via sitemap/detail pages"
   },
   {
+    "company": "Conrad",
+    "type": "conrad_portal",
+    "url": "https://career.conrad.com/de",
+    "search_mode": "onsite_search",
+    "location": "Wernberg-Köblitz",
+    "priority": 5,
+    "status": "active",
+    "implemented": true,
+    "notes": "Conrad career portal with direct detail and apply pages"
+  },
+  {
     "company": "Allianz",
     "type": "allianz_portal",
     "url": "https://careers.allianz.com/",

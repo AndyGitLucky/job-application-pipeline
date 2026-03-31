@@ -11,6 +11,7 @@ from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 
+from source.json_io import load_json_file
 from source.project_paths import runtime_path
 
 DEFAULT_STATE = {
@@ -26,7 +27,9 @@ def load_pipeline_state(path: str | Path = runtime_path("pipeline_state.json")) 
     if not state_path.exists():
         return deepcopy(DEFAULT_STATE)
 
-    raw = json.loads(state_path.read_text(encoding="utf-8"))
+    raw = load_json_file(state_path, default={})
+    if not isinstance(raw, dict):
+        raw = {}
     state = deepcopy(DEFAULT_STATE)
     state.update(raw)
     state.setdefault("jobs", {})
