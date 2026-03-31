@@ -87,6 +87,9 @@ ANFORDERUNGEN:
 - Ton: direkt, sachlich, selbstsicher
 - Laenge: max. 250 Woerter
 - Kein "Sehr geehrte Damen und Herren"
+- Keine Betreffzeile
+- Keine fuehrende Titelzeile wie "Bewerbung als ..."
+- Keine Anrede am Anfang wie "Sehr geehrte..." oder "Hallo..."
 - Erster Absatz: Bezug zur Rolle/Firma
 - Zweiter Absatz: konkrete Passung
 - Dritter Absatz: 3 Stichpunkte
@@ -137,6 +140,29 @@ def clean_generated_text(text: str) -> str:
     return cleaned.strip()
 
 
+def clean_cover_letter_body(text: str) -> str:
+    cleaned = clean_generated_text(text)
+    paragraphs = [para.strip() for para in re.split(r"\n\s*\n", cleaned) if para.strip()]
+
+    def is_boilerplate(paragraph: str) -> bool:
+        compact = " ".join(paragraph.split())
+        lower = compact.lower()
+        if lower.startswith("betreff:"):
+            return True
+        if lower.startswith("sehr geehrte") or lower.startswith("sehr geehrter") or lower.startswith("sehr geehrtes"):
+            return True
+        if lower.startswith("hallo ") or lower.startswith("liebes ") or lower.startswith("liebe "):
+            return True
+        if lower.startswith("bewerbung als ") and len(compact) <= 140 and compact.count(".") <= 1:
+            return True
+        return False
+
+    while paragraphs and is_boilerplate(paragraphs[0]):
+        paragraphs.pop(0)
+
+    return "\n\n".join(paragraphs).strip()
+
+
 def assert_text_guardrails(text: str, asset_type: str) -> None:
     findings = find_negative_self_disclosure(text)
     if findings and CONFIG["guardrail_block_generation"]:
@@ -159,7 +185,7 @@ def generate_anschreiben(job: dict) -> str:
         description=job["description"][:1500],
         language=language,
     )
-    return clean_generated_text(call_llm(prompt, quality=True))
+    return clean_cover_letter_body(call_llm(prompt, quality=True))
 
 
 def generate_outreach(job: dict, contact_role: str = "Hiring Manager") -> str:

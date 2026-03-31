@@ -10,6 +10,31 @@ from source import generate_application as ga
 
 
 class GenerateApplicationSelectionTests(unittest.TestCase):
+    def test_clean_cover_letter_body_removes_subject_and_salutation_boilerplate(self):
+        text = (
+            "Betreff: Bewerbung als AI Forward Deployed Engineer (m/w/d)\n\n"
+            "Sehr geehrtes CANCOM-Team,\n\n"
+            "Ich bringe relevante Erfahrung mit.\n\n"
+            "- Punkt eins\n- Punkt zwei"
+        )
+
+        cleaned = ga.clean_cover_letter_body(text)
+
+        self.assertNotIn("Betreff:", cleaned)
+        self.assertNotIn("Sehr geehrtes", cleaned)
+        self.assertTrue(cleaned.startswith("Ich bringe relevante Erfahrung mit."))
+
+    def test_clean_cover_letter_body_removes_title_like_heading(self):
+        text = (
+            "Bewerbung als AI Forward Deployed Engineer bei CANCOM SE\n\n"
+            "CANCOM gestaltet IT-Lösungen mit echtem Mehrwert."
+        )
+
+        cleaned = ga.clean_cover_letter_body(text)
+
+        self.assertNotIn("Bewerbung als AI Forward Deployed Engineer", cleaned)
+        self.assertEqual(cleaned, "CANCOM gestaltet IT-Lösungen mit echtem Mehrwert.")
+
     def test_cover_letter_pdf_path_uses_central_directory_and_stable_prefix(self):
         with tempfile.TemporaryDirectory() as tmp:
             original_dir = ga.CONFIG["cover_letter_dir"]
