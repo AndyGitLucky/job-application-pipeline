@@ -340,9 +340,9 @@ def _prioritize_explore_jobs(jobs: list[dict]) -> list[dict]:
         strategy = str(job.get("search_strategy") or "").strip().lower()
         semantic_score = float(job.get("search_semantic_score") or 0.0)
         pre_score_rank = float(job.get("pre_score_rank") or 0.0)
-        bucket_rank = 0 if bucket == "explore" else 1
-        strategy_rank = 0 if strategy == "semantic" else 1
-        origin_rank = 0 if origin in {"jobspy", "arbeitsagentur", "stepstone", "company_search"} else 1
+        bucket_rank = 0 if bucket in {"explore", "market_pool"} else 1
+        strategy_rank = 0 if strategy in {"semantic", "semantic_market_pool"} else 1
+        origin_rank = 0 if origin in {"jobspy", "arbeitsagentur", "stepstone", "company_search", "market_pool"} else 1
         source_rank = 0 if source not in {"greenhouse", "lever", "recruitee"} else 1
         return (-pre_score_rank, bucket_rank, strategy_rank, -semantic_score, origin_rank, source_rank, str(job.get("title") or ""))
 
@@ -356,8 +356,8 @@ def _prioritize_normal_jobs(jobs: list[dict]) -> list[dict]:
         source = str(job.get("source") or "").strip().lower()
         description_length = len(str(job.get("description") or ""))
         pre_score_rank = float(job.get("pre_score_rank") or 0.0)
-        bucket_rank = 0 if bucket in {"core", "primary", "direct"} else 1
-        origin_rank = 0 if origin in {"company_search", "primary_source", "direct_source", "arbeitsagentur"} else 1
+        bucket_rank = 0 if bucket in {"core", "primary", "direct", "market_pool"} else 1
+        origin_rank = 0 if origin in {"company_search", "primary_source", "direct_source", "arbeitsagentur", "market_pool"} else 1
         source_rank = 0 if source in {"bmw", "infineon", "siemens_energy", "swm", "arbeitsagentur"} else 1
         return (-pre_score_rank, bucket_rank, origin_rank, source_rank, -description_length, str(job.get("title") or ""))
 
@@ -433,6 +433,26 @@ def _log_pre_score_selection_report(
 def pre_score_job(job: dict, *, feedback_summary: dict, mode: str) -> tuple[float, list[str]]:
     score = 0.0
     signals: list[str] = []
+
+    market_pool_selector_score = float(job.get("market_pool_selector_score") or 0.0)
+    market_pool_stage_score = float(job.get("market_pool_stage_score") or 0.0)
+    market_pool_semantic_score = float(job.get("market_pool_semantic_score") or 0.0)
+    market_role_cluster = str(job.get("market_role_cluster") or job.get("role_cluster") or "").strip()
+    market_source_display = str(job.get("market_source_display") or "").strip()
+    if str(job.get("search_origin") or "").strip().lower() == "market_pool":
+        selector_bonus = min(6.0, market_pool_selector_score * 0.42)
+        score += selector_bonus
+        signals.append(f"market_pool:{round(market_pool_selector_score, 2)}")
+        if market_pool_stage_score:
+            score += min(2.0, market_pool_stage_score * 0.18)
+            signals.append(f"market_stage:{round(market_pool_stage_score, 2)}")
+        if market_pool_semantic_score:
+            score += min(1.8, market_pool_semantic_score * 3.0)
+            signals.append(f"market_semantic:{round(market_pool_semantic_score, 3)}")
+        if market_role_cluster:
+            signals.append(f"market_role:{market_role_cluster}")
+        if market_source_display:
+            signals.append(f"market_source:{market_source_display}")
 
     link_quality = str(job.get("best_link_quality") or "").strip().lower()
     if link_quality == "high":

@@ -19,7 +19,7 @@ if __package__ in {None, ""}:
 
 from source.contact_linker import enrich_jobs_with_contacts
 from source.find_contacts import find_contacts
-from source.find_jobs import find_jobs
+from source.find_jobs import find_jobs_with_intake
 from source.generate_application import generate_applications
 from source.pipeline_state_manager import (
     append_run,
@@ -121,10 +121,14 @@ def run_pipeline(
     steps_override: list[str] | None = None,
     *,
     search_mode: str = "normal",
+    intake_source: str = "standard",
+    market_pool_locality: str = "munich_only",
 ) -> dict:
     stats = {
         "Started": datetime.now().strftime("%H:%M:%S"),
         "Search mode": search_mode,
+        "Intake source": intake_source,
+        "Market locality": market_pool_locality if intake_source == "market_pool" else "",
         "Jobs found": 0,
         "Recommended": 0,
         "Contacts found": 0,
@@ -142,7 +146,11 @@ def run_pipeline(
     if "find_jobs" in steps:
         print_step(_step_label("find_jobs", steps))
         try:
-            jobs = find_jobs(search_mode=search_mode)
+            jobs = find_jobs_with_intake(
+                search_mode=search_mode,
+                intake_source=intake_source,
+                market_pool_locality=market_pool_locality,
+            )
             stats["Jobs found"] = len(jobs)
             sync_jobs(state, jobs, stage="discovered")
             save_pipeline_state(state)
@@ -198,7 +206,13 @@ def run_pipeline(
     return stats
 
 
-def run_loop(dry_run: bool = False, *, search_mode: str = "normal") -> None:
+def run_loop(
+    dry_run: bool = False,
+    *,
+    search_mode: str = "normal",
+    intake_source: str = "standard",
+    market_pool_locality: str = "munich_only",
+) -> None:
     state = load_pipeline_state()
     run_number = len(state.get("runs", [])) + 1
 
@@ -212,7 +226,12 @@ def run_loop(dry_run: bool = False, *, search_mode: str = "normal") -> None:
             continue
 
         print_banner(run_number)
-        stats = run_pipeline(dry_run=dry_run, search_mode=search_mode)
+        stats = run_pipeline(
+            dry_run=dry_run,
+            search_mode=search_mode,
+            intake_source=intake_source,
+            market_pool_locality=market_pool_locality,
+        )
         print_summary(stats)
 
         state = load_pipeline_state()
@@ -249,6 +268,18 @@ def main() -> None:
         default="normal",
         help="Waehlt zwischen normaler Profilsuche und explorativer Suche mit engem LLM-Limit.",
     )
+    parser.add_argument(
+        "--intake-source",
+        choices=["standard", "market_pool"],
+        default="standard",
+        help="Waehlt zwischen klassischer Query-Suche und semantischer Auswahl aus dem Market Explorer Pool.",
+    )
+    parser.add_argument(
+        "--market-pool-locality",
+        choices=["munich_only", "prefer_munich", "all"],
+        default="munich_only",
+        help="Steuert den Regionalfokus fuer den Market-Pool-Intake. Default fuer main ist munich_only.",
+    )
     parser.add_argument("--no-ui", action="store_true", help="Unterdrueckt den automatischen Start der Present-UI.")
     parser.add_argument("--host", default="127.0.0.1", help="Host fuer die lokale Present-UI.")
     parser.add_argument("--port", type=int, default=8765, help="Port fuer die lokale Present-UI.")
@@ -261,13 +292,24 @@ def main() -> None:
     steps_override = [args.step] if args.step else None
 
     if args.loop:
-        run_loop(dry_run=args.dry_run, search_mode=args.search_mode)
+        run_loop(
+            dry_run=args.dry_run,
+            search_mode=args.search_mode,
+            intake_source=args.intake_source,
+            market_pool_locality=args.market_pool_locality,
+        )
         return
 
     state = load_pipeline_state()
     run_number = len(state.get("runs", [])) + 1
     print_banner(run_number)
-    stats = run_pipeline(dry_run=args.dry_run, steps_override=steps_override, search_mode=args.search_mode)
+    stats = run_pipeline(
+        dry_run=args.dry_run,
+        steps_override=steps_override,
+        search_mode=args.search_mode,
+        intake_source=args.intake_source,
+        market_pool_locality=args.market_pool_locality,
+    )
     print_summary(stats)
 
     state = load_pipeline_state()

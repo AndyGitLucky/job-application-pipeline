@@ -17,7 +17,7 @@ import math
 import re
 import html
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -32,6 +32,7 @@ if __package__ in {None, ""}:
 from source.env_utils import load_dotenv
 from source.job_url_normalizer import normalize_job_url
 from source.link_extractor import annotate_job_links
+from source.market_pool_selector import MarketPoolSelectionError, select_market_pool_jobs
 from source.project_paths import (
     config_path,
     resolve_config_path,
@@ -210,6 +211,7 @@ def make_job(
         description=description,
         source=source,
     )
+    normalized_date = _normalize_posted_date(date) or _extract_posted_date_from_text(description)
     return {
         "id":          job_id(canonical_url or raw_url),
         "title":       clean_job_title(title),
@@ -222,13 +224,58 @@ def make_job(
         "apply_url_type": apply_url_type,
         "description": description.strip()[:2000],  # Länge begrenzen
         "source":      source,
-        "date":        date or datetime.today().strftime("%Y-%m-%d"),
+        "date":        normalized_date or datetime.today().strftime("%Y-%m-%d"),
         "score":       None,   # wird von score_jobs.py befüllt
         "filtered":    False,
         "job_status":  "candidate",
         "listing_status": "unverified",
         "validation_reason": "",
     }
+
+
+def _normalize_posted_date(value: object) -> str:
+    text = _safe_text_value(value, "").strip()
+    if not text:
+        return ""
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", text):
+        return text
+    if re.match(r"^\d{4}-\d{2}-\d{2}T", text):
+        return text[:10]
+    if re.match(r"^\d{2}\.\d{2}\.\d{4}$", text):
+        try:
+            return datetime.strptime(text, "%d.%m.%Y").strftime("%Y-%m-%d")
+        except ValueError:
+            return ""
+    return ""
+
+
+def _extract_posted_date_from_text(text: object) -> str:
+    haystack = _safe_text_value(text, "").lower()
+    if not haystack:
+        return ""
+
+    today = datetime.today().date()
+    if re.search(r"\bheute\b|\btoday\b", haystack):
+        return today.strftime("%Y-%m-%d")
+    if re.search(r"\bgestern\b|\byesterday\b", haystack):
+        return (today - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    day_match = re.search(r"\bvor\s+(\d+)\s+tag(?:en)?\b|\b(\d+)\s+days?\s+ago\b", haystack)
+    if day_match:
+        days = int(day_match.group(1) or day_match.group(2) or 0)
+        return (today - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    week_match = re.search(r"\bvor\s+(\d+)\s+woche(?:n)?\b|\b(\d+)\s+weeks?\s+ago\b", haystack)
+    if week_match:
+        weeks = int(week_match.group(1) or week_match.group(2) or 0)
+        return (today - timedelta(days=weeks * 7)).strftime("%Y-%m-%d")
+
+    if re.search(r"\bvor\s+\d+\s+stund(?:e|en)\b|\b\d+\s+hours?\s+ago\b", haystack):
+        return today.strftime("%Y-%m-%d")
+    if re.search(r"\bvor\s+\d+\s+min(?:ute|uten)?\b|\b\d+\s+minutes?\s+ago\b", haystack):
+        return today.strftime("%Y-%m-%d")
+
+    return ""
 
 
 def deduplicate(jobs: list) -> list:
@@ -288,6 +335,11 @@ def normalize_title_for_dedupe(title: str) -> str:
     text = _repair_known_mojibake(text)
     text = _normalize_unicode_like_text(text)
     text = re.sub(r"\((?:m|w|d|f|x|div|gn|all genders|all gender)[^)]*\)", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b(?:gesucht|dringend gesucht|ab sofort|zum naechstmoeglichen zeitpunkt|zum fruehestmoeglichen zeitpunkt)\b", " ", text)
+    text = re.sub(r"\b(?:im kundenauftrag|fuer unseren kunden|fuer unseren auftraggeber|fuer gewerbekunden)\b", " ", text)
+    text = re.sub(r"\b(?:werde teil unseres talentpools|talentpool)\b", " ", text)
+    text = re.sub(r"\b(?:mit wechselpraemie|quereinsteiger willkommen|quereinsteiger)\b", " ", text)
+    text = re.sub(r"\b(?:studentenjobs|jobs fuer studierende|fuer studierende)\b", " ", text)
     text = text.replace("&", " and ")
     text = re.sub(r"\bml\s+ops\b", " mlops ", text)
     text = re.sub(r"\bm l ops\b", " mlops ", text)
@@ -1894,10 +1946,23 @@ def _fallback_search_plan(search_mode: str) -> dict:
 
 
 def find_jobs(search_mode: str = "normal") -> list:
+    return find_jobs_with_intake(search_mode=search_mode, intake_source="standard")
+
+
+def find_jobs_with_intake(
+    search_mode: str = "normal",
+    *,
+    intake_source: str = "standard",
+    market_pool_locality: str = "munich_only",
+) -> list:
     all_jobs = []
     mode = str(search_mode or "normal").strip().lower()
     if mode not in {"normal", "explore"}:
         mode = "normal"
+    selected_intake = str(intake_source or "standard").strip().lower() or "standard"
+
+    if selected_intake == "market_pool":
+        return _find_jobs_from_market_pool(search_mode=mode, market_pool_locality=market_pool_locality)
 
     try:
         search_plan = build_search_plan(mode)
@@ -2048,6 +2113,32 @@ def find_jobs(search_mode: str = "normal") -> list:
     log.info(f"Gespeichert: {output.resolve()}")
 
     return validated
+
+
+def _find_jobs_from_market_pool(search_mode: str, *, market_pool_locality: str = "munich_only") -> list:
+    log.info("Intake source: market_pool | locality=%s", market_pool_locality)
+    try:
+        selected_jobs = select_market_pool_jobs(search_mode=search_mode, locality_mode=market_pool_locality)
+    except MarketPoolSelectionError as exc:
+        log.error("Market pool intake failed: %s", exc)
+        return []
+
+    output = resolve_runtime_path(CONFIG["output_file"])
+    output.write_text(json.dumps(selected_jobs, ensure_ascii=False, indent=2), encoding="utf-8")
+    log.info("Market pool vorbereitet: %s Jobs in %s", len(selected_jobs), output.resolve())
+
+    for job in selected_jobs[:10]:
+        log.info(
+            "  #%s pre=%.2f | %s @ %s | %s | %s",
+            job.get("market_pool_rank", "-"),
+            float(job.get("market_pool_selector_score") or 0.0),
+            clean_job_title(str(job.get("title") or ""))[:50],
+            clean_company_name(str(job.get("company") or ""))[:28],
+            str(job.get("market_role_cluster") or ""),
+            str(job.get("market_industry") or ""),
+        )
+
+    return selected_jobs
 
 
 # --- Direkt ausführbar ---------------------------------------------------------

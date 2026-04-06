@@ -1,0 +1,64 @@
+[
+  {
+    "name": "HelloFresh Greenhouse",
+    "kind": "greenhouse",
+    "enabled": true,
+    "board_token": "hellofresh",
+    "company": "HelloFresh",
+    "location_hint": "Berlin, Germany",
+    "include_location_keywords": ["germany", "deutschland", "berlin", "remote germany"]
+  },
+  {
+    "name": "Zenjob Greenhouse",
+    "kind": "greenhouse",
+    "enabled": false,
+    "board_token": "zenjob",
+    "company": "Zenjob",
+    "location_hint": "Berlin, Germany",
+    "include_location_keywords": ["germany", "deutschland", "berlin"]
+  },
+  {
+    "name": "Wunderflats Greenhouse",
+    "kind": "greenhouse",
+    "enabled": true,
+    "board_token": "wunderflats",
+    "company": "Wunderflats",
+    "location_hint": "Berlin, Germany",
+    "include_location_keywords": ["germany", "deutschland", "berlin"]
+  },
+  {
+    "name": "simplesurance Greenhouse",
+    "kind": "greenhouse",
+    "enabled": false,
+    "board_token": "simplesurance",
+    "company": "simplesurance",
+    "location_hint": "Berlin, Germany",
+    "include_location_keywords": ["germany", "deutschland", "berlin"]
+  },
+  {
+    "name": "air up Greenhouse",
+    "kind": "greenhouse",
+    "enabled": false,
+    "board_token": "air-up",
+    "company": "air up",
+    "location_hint": "Munich, Germany",
+    "include_location_keywords": ["germany", "deutschland", "munich", "muenchen", "münchen"]
+  },
+  {
+    "name": "Example Lever Site",
+    "kind": "lever",
+    "enabled": false,
+    "site_name": "example-company",
+    "company": "Example Company",
+    "location_hint": "Germany",
+    "include_location_keywords": ["germany", "deutschland"]
+  },
+  {
+    "name": "Example JobPosting Page",
+    "kind": "jobposting",
+    "enabled": false,
+    "url": "https://example.com/careers",
+    "company": "Example Company",
+    "include_location_keywords": ["germany", "deutschland"]
+  }
+]

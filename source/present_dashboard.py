@@ -13,6 +13,7 @@ if __package__ in {None, ""}:
 
 from source.job_visibility import hidden_reason, load_apply_log, should_hide_job
 from source.link_extractor import annotate_job_links
+from source.pipeline_state_manager import load_pipeline_state
 from source.project_paths import artifacts_path, resolve_artifacts_path, resolve_runtime_path, runtime_path
 
 
@@ -49,10 +50,11 @@ def render_present_dashboard(
     raw_path = resolve_runtime_path(jobs_raw_path or DEFAULT_RAW)
     scored_path = resolve_runtime_path(jobs_scored_path or DEFAULT_SCORED)
     apply_log = load_apply_log(apply_log_path or DEFAULT_APPLY_LOG)
+    pipeline_state = load_pipeline_state()
 
     raw_jobs = _load_json_list(raw_path)
     scored_jobs = _load_json_list(scored_path)
-    rows = _merge_jobs(raw_jobs, scored_jobs)
+    rows = _merge_jobs(raw_jobs, scored_jobs, pipeline_jobs=pipeline_state.get("jobs", {}))
 
     hidden_rows = [job for job in rows if should_hide_job(job, apply_log)]
     visible_rows = [job for job in rows if not should_hide_job(job, apply_log)]
@@ -111,9 +113,14 @@ def _load_json_list(path: Path) -> list[dict]:
     return [item for item in data if isinstance(item, dict)]
 
 
-def _merge_jobs(raw_jobs: list[dict], scored_jobs: list[dict]) -> list[dict]:
+def _merge_jobs(raw_jobs: list[dict], scored_jobs: list[dict], *, pipeline_jobs: dict[str, dict] | None = None) -> list[dict]:
     scored_by_id = {str(job.get("id") or ""): job for job in scored_jobs if job.get("id")}
     raw_by_id = {str(job.get("id") or ""): job for job in raw_jobs if job.get("id")}
+    state_by_id = {
+        str(job_id): job_state
+        for job_id, job_state in (pipeline_jobs or {}).items()
+        if str(job_id).strip() and isinstance(job_state, dict)
+    }
 
     all_ids = []
     seen_ids = set()
@@ -122,7 +129,6 @@ def _merge_jobs(raw_jobs: list[dict], scored_jobs: list[dict]) -> list[dict]:
         if job_id and job_id not in seen_ids:
             seen_ids.add(job_id)
             all_ids.append(job_id)
-
     rows = []
     for job_id in all_ids:
         merged = {}
@@ -130,11 +136,58 @@ def _merge_jobs(raw_jobs: list[dict], scored_jobs: list[dict]) -> list[dict]:
             merged.update(raw_by_id[job_id])
         if job_id in scored_by_id:
             merged.update(scored_by_id[job_id])
+        if job_id in state_by_id:
+            merged.update(_state_overlay_to_job(state_by_id[job_id]))
         if not merged:
             continue
         merged.update(annotate_job_links(merged))
         rows.append(merged)
     return rows
+
+
+def _state_overlay_to_job(state_entry: dict) -> dict:
+    decision_payload = state_entry.get("decision")
+    overlay: dict[str, object] = {
+        "review_status": state_entry.get("review_status", ""),
+        "verification_status": state_entry.get("verification_status", ""),
+    }
+
+    metrics = state_entry.get("metrics") if isinstance(state_entry.get("metrics"), dict) else {}
+    history = state_entry.get("history") if isinstance(state_entry.get("history"), list) else []
+
+    if isinstance(decision_payload, dict):
+        overlay["decision"] = decision_payload.get("decision", "")
+        overlay["decision_reason"] = decision_payload.get("decision_reason", "")
+        overlay["final_bucket"] = decision_payload.get("final_bucket", "") or metrics.get("final_bucket", "")
+        overlay["score"] = decision_payload.get("score", metrics.get("score"))
+        overlay["recommended"] = decision_payload.get("recommended", metrics.get("recommended"))
+    else:
+        overlay["decision"] = decision_payload or ""
+        overlay["decision_reason"] = state_entry.get("decision_reason", "")
+        overlay["final_bucket"] = metrics.get("final_bucket", "")
+        overlay["score"] = metrics.get("score")
+        overlay["recommended"] = metrics.get("recommended")
+
+    if metrics:
+        overlay.setdefault("score_status", metrics.get("score_status", ""))
+        overlay.setdefault("fit_status", metrics.get("fit_status", ""))
+        overlay.setdefault("apply_path_status", metrics.get("apply_path_status", ""))
+
+    verification_note = state_entry.get("verification_note", "")
+    if verification_note:
+        overlay["verification_note"] = verification_note
+
+    if not overlay.get("score_status"):
+        for item in reversed(history):
+            if not isinstance(item, dict):
+                continue
+            extras = item.get("extras") if isinstance(item.get("extras"), dict) else {}
+            score_status = extras.get("score_status")
+            if score_status:
+                overlay["score_status"] = score_status
+                break
+
+    return overlay
 
 
 def _render_dashboard(

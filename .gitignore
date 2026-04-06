@@ -19,6 +19,7 @@ resources/
 
 # Build / generated UI
 source/present_dashboard.html
+market_explorer/exports/*.html
 
 # Runtime state / logs / caches
 source/__pycache__/
@@ -26,6 +27,8 @@ feedback_log.json
 setup_log.txt
 runtime/
 artifacts/
+market_explorer/data/*.json
+!market_explorer/data/.gitkeep
 
 # Local pipeline data and private review state
 source/jobs_raw.json
@@ -50,3 +53,6 @@ archive/legacy_cv_generator/output/
 
 # Historical / local leftovers
 .old/
+
+# Local screenshots / scratch captures
+screenshots/
