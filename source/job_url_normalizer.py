@@ -40,7 +40,8 @@ def normalize_job_url(url: str, *, source: str = "") -> str:
             return f"https://{locale_host}/viewjob?jk={job_key}"
 
     if "stepstone." in host or source_l == "stepstone":
-        return _strip_query_and_fragment(parsed, keep_query_keys=set())
+        normalized = _strip_query_and_fragment(parsed, keep_query_keys=set())
+        return _normalize_stepstone_detail_url(normalized)
 
     if "linkedin." in host or source_l == "linkedin":
         return _strip_query_and_fragment(parsed, keep_query_keys=set())
@@ -83,3 +84,11 @@ def _strip_tracking_params(parsed) -> str:
             filtered.append((key, value))
     new_query = urlencode(filtered, doseq=True)
     return urlunparse((parsed.scheme or "https", parsed.netloc, parsed.path, "", new_query, ""))
+
+
+def _normalize_stepstone_detail_url(url: str) -> str:
+    parsed = urlparse(url)
+    path = parsed.path or ""
+    if path.endswith("-inline.html"):
+        path = path[: -len("-inline.html")] + "-.html"
+    return urlunparse((parsed.scheme or "https", parsed.netloc, path, "", parsed.query, ""))

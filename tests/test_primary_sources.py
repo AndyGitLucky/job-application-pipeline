@@ -9,11 +9,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.modules.setdefault("feedparser", types.SimpleNamespace())
 
 from source.find_jobs import (
+    _build_man_rss_url,
     _extract_bmw_location,
     _extract_conrad_location,
     _extract_infineon_location,
     _extract_siemens_location,
     _matches_company_search_term,
+    _normalize_rss_entry_date,
+    _parse_man_title_and_location,
     enrich_job_description,
     load_company_search_sources,
     load_primary_sources,
@@ -122,6 +125,25 @@ class PrimarySourcesTests(unittest.TestCase):
             "bei RE-INvent Retail GmbH RE-INvent Retail GmbH Nuernberg Vollzeit Jetzt bewerben"
         )
         self.assertEqual(_extract_conrad_location(text, company="RE-INvent Retail GmbH"), "Nuernberg")
+
+    def test_build_man_rss_url_quotes_search_term(self):
+        self.assertEqual(
+            _build_man_rss_url("https://jobs.man.eu/", "Machine Learning Engineer"),
+            "https://jobs.man.eu/services/rss/job/?locale=de_DE&keywords=(Machine%20Learning%20Engineer)",
+        )
+
+    def test_parse_man_title_and_location(self):
+        title, location = _parse_man_title_and_location(
+            "Planer Digitalisierung/ Digitaler Zwilling in der Produktion (w/m/d) (München, DE, 80995)"
+        )
+        self.assertEqual(title, "Planer Digitalisierung/ Digitaler Zwilling in der Produktion (w/m/d)")
+        self.assertEqual(location, "München, DE, 80995")
+
+    def test_normalize_rss_entry_date(self):
+        self.assertEqual(
+            _normalize_rss_entry_date({"published": "Thu, 02 Apr 2026 2:00:00 GMT"}),
+            "2026-04-02",
+        )
 
     def test_enrich_job_description_prefers_richer_detail_text(self):
         from source import find_jobs

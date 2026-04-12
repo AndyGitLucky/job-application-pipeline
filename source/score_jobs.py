@@ -358,7 +358,7 @@ def _prioritize_normal_jobs(jobs: list[dict]) -> list[dict]:
         pre_score_rank = float(job.get("pre_score_rank") or 0.0)
         bucket_rank = 0 if bucket in {"core", "primary", "direct", "market_pool"} else 1
         origin_rank = 0 if origin in {"company_search", "primary_source", "direct_source", "arbeitsagentur", "market_pool"} else 1
-        source_rank = 0 if source in {"bmw", "infineon", "siemens_energy", "swm", "arbeitsagentur"} else 1
+        source_rank = 0 if source in {"bmw", "man", "infineon", "siemens_energy", "swm", "arbeitsagentur"} else 1
         return (-pre_score_rank, bucket_rank, origin_rank, source_rank, -description_length, str(job.get("title") or ""))
 
     return sorted(jobs, key=sort_key)
@@ -485,7 +485,7 @@ def pre_score_job(job: dict, *, feedback_summary: dict, mode: str) -> tuple[floa
         signals.append("desc:medium")
 
     source = str(job.get("source") or "").strip().lower()
-    if source in {"bmw", "infineon", "siemens_energy", "swm", "conrad"}:
+    if source in {"bmw", "man", "infineon", "siemens_energy", "swm", "conrad"}:
         score += 1.8
         signals.append(f"source:{source}")
     elif source == "arbeitsagentur":

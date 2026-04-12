@@ -42,5 +42,16 @@
     "status": "active",
     "implemented": true,
     "notes": "BMW job portal via sitemap/detail pages"
+  },
+  {
+    "company": "MAN Truck & Bus",
+    "type": "man_portal",
+    "url": "https://jobs.man.eu/",
+    "search_mode": "onsite_search",
+    "location": "Munich",
+    "priority": 5,
+    "status": "active",
+    "implemented": true,
+    "notes": "MAN job portal via SuccessFactors RSS search feed"
   }
 ]

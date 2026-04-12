@@ -406,7 +406,7 @@ def source_rank(job: dict) -> int:
     source = (job.get("source") or "").strip().lower()
     if source in {"greenhouse", "lever", "recruitee"}:
         return 6
-    if source in {"infineon", "siemens_energy", "swm", "bmw", "conrad"} or source.startswith("direct_"):
+    if source in {"infineon", "siemens_energy", "swm", "bmw", "man", "conrad"} or source.startswith("direct_"):
         return 5
     if source == "arbeitsagentur":
         return 4
@@ -1112,6 +1112,8 @@ def fetch_company_search_source(source: dict, term: str) -> list:
         return fetch_infineon_portal(source, term)
     if source_type == "bmw_portal":
         return fetch_bmw_portal(source, term)
+    if source_type == "man_portal":
+        return fetch_man_portal(source, term)
     if source_type == "conrad_portal":
         return fetch_conrad_portal(source, term)
 
@@ -1324,6 +1326,49 @@ def fetch_bmw_portal(source: dict, term: str) -> list:
     return jobs
 
 
+def fetch_man_portal(source: dict, term: str) -> list:
+    base_url = (source.get("url") or "https://jobs.man.eu/").strip()
+    company = source.get("company") or "MAN Truck & Bus"
+    location_override = source.get("location") or CONFIG["location"]
+    rss_url = _build_man_rss_url(base_url, term)
+
+    log.info("MAN portal: %s / %s", company, term)
+    try:
+        feed = feedparser.parse(rss_url)
+    except Exception as exc:
+        log.warning("  MAN Fehler (%s): %s", company, exc)
+        return []
+
+    jobs = []
+    for entry in getattr(feed, "entries", []) or []:
+        title_raw = str(entry.get("title") or "").strip()
+        detail_url = str(entry.get("link") or "").strip()
+        description = _html_to_text(entry.get("summary") or entry.get("description") or "")
+        title, location = _parse_man_title_and_location(title_raw)
+        if not title or not detail_url:
+            continue
+        if not _matches_company_search_term(term, title, description):
+            continue
+        jobs.append(
+            make_job(
+                title=title,
+                company=company,
+                location=location or location_override,
+                url=detail_url,
+                description=description or title,
+                source="man",
+                date=_normalize_rss_entry_date(entry),
+                discovery_url=rss_url,
+                apply_url=detail_url,
+                source_url_type="company_career_page",
+                apply_url_type="company_career_page",
+            )
+        )
+
+    log.info("  → %s MAN-Jobs gefunden", len(jobs))
+    return jobs
+
+
 def fetch_conrad_portal(source: dict, term: str) -> list:
     base_url = (source.get("url") or "https://career.conrad.com/de").strip()
     listing_url = requests.compat.urljoin(base_url, "/stellenangebote.html")
@@ -1386,7 +1431,7 @@ def fetch_conrad_portal(source: dict, term: str) -> list:
             )
         )
 
-    log.info("  â†’ %s Conrad-Jobs gefunden", len(jobs))
+    log.info("  → %s Conrad-Jobs gefunden", len(jobs))
     return jobs
 
 
@@ -1744,6 +1789,45 @@ def _extract_conrad_location(text: str, company: str = "") -> str:
         match = re.search(pattern, haystack, flags=re.IGNORECASE)
         if match:
             return match.group(1).strip(" ,;-")
+    return ""
+
+
+def _build_man_rss_url(base_url: str, term: str) -> str:
+    cleaned_base = (base_url or "https://jobs.man.eu/").strip().rstrip("/") + "/"
+    keyword = (term or "").strip()
+    return f"{cleaned_base}services/rss/job/?locale=de_DE&keywords=({requests.utils.quote(keyword)})"
+
+
+def _parse_man_title_and_location(title: str) -> tuple[str, str]:
+    raw = clean_job_title(title or "")
+    match = re.match(r"^(?P<title>.+?)\s+\((?P<location>[^()]*)\)\s*$", raw)
+    if not match:
+        return raw, ""
+    parsed_title = match.group("title").strip()
+    location = match.group("location").strip()
+    if re.search(r"\b\d{4,5}\b", location) or re.search(r",\s*[A-Z]{2}\b", location):
+        return parsed_title, location
+    return raw, ""
+
+
+def _normalize_rss_entry_date(entry: object) -> str:
+    if not isinstance(entry, dict):
+        return ""
+    published_parsed = entry.get("published_parsed") or entry.get("updated_parsed")
+    if published_parsed:
+        try:
+            return time.strftime("%Y-%m-%d", published_parsed)
+        except Exception:
+            return ""
+    published = entry.get("published") or entry.get("updated") or ""
+    text = str(published or "").strip()
+    if not text:
+        return ""
+    for fmt in ("%a, %d %b %Y %H:%M:%S %Z", "%a, %d %b %Y %H:%M %Z"):
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
     return ""
 
 
