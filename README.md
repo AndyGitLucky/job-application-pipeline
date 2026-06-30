@@ -1,8 +1,8 @@
 # Job Application Pipeline
 
-Ein praxisnahes Human-in-the-loop-System fuer Jobsuche, Review und Bewerbungsorganisation.
+Ein praxisnahes Human-in-the-loop-System für Jobsuche, Review und Bewerbungsorganisation.
 
-Das Projekt sammelt Stellen aus Jobboards und Firmenportalen, bewertet sie mit einem LLM, priorisiert sie in einer lokalen Review-UI und erzeugt daraus gezielt Bewerbungsunterlagen. Der urspruengliche Vollautomationsgedanke wurde bewusst zu einem realistischeren Modell weiterentwickelt: **Jobboards dienen vor allem als Discovery-Quelle, echte Firmenportale und manuelle Review sind der operative Kern.**
+Das Projekt sammelt Stellen aus Jobboards und Firmenportalen, bewertet sie mit einem LLM, priorisiert sie in einer lokalen Review-UI und erzeugt daraus gezielt Bewerbungsunterlagen. Der ursprüngliche Vollautomationsgedanke wurde bewusst zu einem realistischeren Modell weiterentwickelt: **Jobboards dienen vor allem als Discovery-Quelle, echte Firmenportale und manuelle Review sind der operative Kern.**
 
 ## Problem
 
@@ -10,34 +10,34 @@ Viele Job-Scraping-Projekte brechen an derselben Stelle:
 
 - Jobboards liefern oft nur instabile oder blockierte Links
 - echte Bewerbungswege liegen hinter ATS, Firmenportalen oder Captchas
-- reine Automatisierung scheitert an Anti-Bot-Massnahmen
-- viel Zeit geht fuer manuelle Sichtung und Nachverfolgung verloren
+- reine Automatisierung scheitert an Anti-Bot-Maßnahmen
+- viel Zeit geht für manuelle Sichtung und Nachverfolgung verloren
 
-Dieses Projekt adressiert genau diese Luecke:
+Dieses Projekt adressiert genau diese Lücke:
 
 - Jobs finden
 - bessere Quellen von schwachen Quellen trennen
 - fachliche Passung mit LLM bewerten
 - offene Kandidaten in einer lokalen UI bearbeiten
-- Unterlagen nur fuer echte Zielstellen erzeugen
+- Unterlagen nur für echte Zielstellen erzeugen
 
 ## Projektstory
 
 Das Projekt begann als deutlich automatischerer Bewerbungs-Workflow. In der Praxis zeigte sich aber schnell, dass genau dort die interessanten Probleme liegen:
 
 - Jobboards liefern oft nur schwache Discovery-Links
-- echte Bewerbungswege fuehren ueber Firmenportale, ATS oder Captcha-gatete Seiten
-- reine Vollautomation ist technisch an einzelnen Stellen moeglich, operativ aber oft die falsche Architektur
+- echte Bewerbungswege führen über Firmenportale, ATS oder Captcha-gatete Seiten
+- reine Vollautomation ist technisch an einzelnen Stellen möglich, operativ aber oft die falsche Architektur
 
-Die Antwort darauf war kein groesseres Auto-Apply-System, sondern eine bewusst robustere Pipeline:
+Die Antwort darauf war kein grösseres Auto-Apply-System, sondern eine bewusst robustere Pipeline:
 
 - bessere Quellenlogik
-- staerkere Trennung von Discovery und Primaerquelle
-- LLM-Scoring fuer Priorisierung
+- stärkere Trennung von Discovery und Primärquelle
+- LLM-Scoring für Priorisierung
 - lokale Review-UI als Arbeitsboard
 - ein erster echter Feedback-Loop aus menschlichen Entscheidungen
 
-Ein wichtiger Teil dieser Entwicklung war auch, dass fruehere Ideen wie **Auto-Apply** und allgemeines **Outreach als Standardpfad** nicht einfach "fehlten", sondern im Projektverlauf bewusst zurueckgebaut wurden. Sie waren als Experimente nuetzlich, passten aber am Ende nicht zur operativen Realitaet aus Jobboards, ATS, Captchas und instabilen Apply-Links. Der heutige Fokus ist deshalb enger, ehrlicher und robuster.
+Ein wichtiger Teil dieser Entwicklung war auch, dass frühere Ideen wie **Auto-Apply** und allgemeines **Outreach als Standardpfad** nicht einfach "fehlten", sondern im Projektverlauf bewusst zurückgebaut wurden. Sie waren als Experimente nützlich, passten aber am Ende nicht zur operativen Realität aus Jobboards, ATS, Captchas und instabilen Apply-Links. Der heutige Fokus ist deshalb enger, ehrlicher und robuster.
 
 ## Aktueller Fokus
 
@@ -46,28 +46,28 @@ Heute ist das Projekt bewusst **kein blindes Auto-Apply-System** mehr.
 Stattdessen:
 
 - **Jobboards** = Discovery
-- **Firmenportale / ATS / Captcha-gated Kontakte** = operative Realitaet
+- **Firmenportale / ATS / Captcha-gated Kontakte** = operative Realität
 - **LLM-Scoring** = Priorisierung, nicht letzte Wahrheit
-- **Review Workbench** = Arbeitsboard fuer `Freigeben`, `Reject`, `Dead Listing`, `Beworben` und `Unterlagen`
+- **Review Workbench** = Arbeitsboard für `Freigeben`, `Reject`, `Dead Listing`, `Beworben` und `Unterlagen`
 
 ## Kernfunktionen
 
-- Multi-Source Ingestion fuer:
+- Multi-Source Ingestion für:
   - Jobboards
   - Arbeitsagentur
   - direkte Firmenseiten
   - Firmenportale wie Siemens Energy, SWM, Infineon und BMW Group
 - URL-Normalisierung und Best-Source-Dedupe
-- robusteres Dedupe fuer Firmen- und Titelvarianten wie `BMW Group` vs `BMW AG` oder `ML Ops` vs `MLOps`
-- Nachladen reichhaltiger Detailbeschreibungen fuer duenne Funde
+- robusteres Dedupe für Firmen- und Titelvarianten wie `BMW Group` vs `BMW AG` oder `ML Ops` vs `MLOps`
+- Nachladen reichhaltiger Detailbeschreibungen für dünne Funde
 - LLM-Scoring mit Kandidatenprofil und Retrieval-Kontext
-- Feedback-Loop aus echten Review-Entscheidungen zur spaeteren Ranking-Anpassung
-- erste Job-Semantik-Schicht fuer aehnliche Rollen, Duplicate-Hinweise und spaeteres Profil-Matching
+- Feedback-Loop aus echten Review-Entscheidungen zur späteren Ranking-Anpassung
+- erste Job-Semantik-Schicht für ähnliche Rollen, Duplicate-Hinweise und späteres Profil-Matching
 - lokale Review-UI mit Statusaktionen und Reject-Grundchips
-- getrennte Embedding-Eval-Ansicht fuer manuelle Similarity-Pruefung
+- getrennte Embedding-Eval-Ansicht für manuelle Similarity-Prüfung
 - Generierung von Bewerbungsordnern direkt aus der UI
 - stabile Cover-Letter-PDFs mit zentralem Ablageort plus lokale Kopie im Bewerbungsordner
-- Speicherung manueller Kontakte fuer spaetere Wiederverwendung
+- Speicherung manueller Kontakte für spätere Wiederverwendung
 - Retrieval-/Embedding-Schicht mit lokalem Vector-Store und optionalen Embedding-Providern
 
 ## Architektur
@@ -101,23 +101,23 @@ jobs_scored.json
      -> txt / docx / pdf assets
 ```
 
-Eine kompaktere Uebersicht als Diagramm steht in [ARCHITECTURE.md](./ARCHITECTURE.md).
+Eine kompaktere Übersicht als Diagramm steht in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Beispiel-Workflow
 
 1. Jobs werden aus mehreren Quellen gesammelt.
-2. Schwache Discovery-Links und staerkere Primaerquellen werden unterschieden.
-3. Duenne Funde werden vor dem Scoring wenn moeglich mit echter Detailbeschreibung angereichert.
+2. Schwache Discovery-Links und stärkere Primärquellen werden unterschieden.
+3. Dünne Funde werden vor dem Scoring wenn möglich mit echter Detailbeschreibung angereichert.
 4. Das LLM bewertet die fachliche Passung.
-5. Feedback aus frueheren Entscheidungen kann die spaetere Sortierung ueber `ranking_score` leicht nachjustieren.
+5. Feedback aus früheren Entscheidungen kann die spätere Sortierung über `ranking_score` leicht nachjustieren.
 6. Die Review-UI zeigt nur die noch offenen, relevanten Kandidaten.
-7. Ueber die UI werden Jobs als:
+7. Über die UI werden Jobs als:
    - `Beworben`
    - `Reject`
    - `Dead Listing`
    - `Freigegeben`
    markiert.
-8. Fuer passende Stellen werden Unterlagen direkt aus der UI erzeugt.
+8. Für passende Stellen werden Unterlagen direkt aus der UI erzeugt.
 
 Der operative Kern ist damit heute eher **human-reviewed pipeline** als blinde Vollautomation.
 
@@ -127,14 +127,14 @@ Ein konkreter End-to-End-Fall im Projekt war die Stelle:
 
 - `FALKEN Group`
 - `Data Engineer - Schwerpunkt AI (m/w/d)`
-- Fund ueber Arbeitsagentur
+- Fund über Arbeitsagentur
 
 Der Ablauf:
 
 1. Die Stelle kam als Arbeitsagentur-Fund in den Pool.
 2. Sie wurde mit Kandidatenprofil und Retrieval-Kontext gescored.
 3. Sie erschien in der Review-UI als `needs_review`.
-4. Nach manueller Pruefung wurde direkt aus dem System ein Bewerbungsordner erzeugt.
+4. Nach manueller Prüfung wurde direkt aus dem System ein Bewerbungsordner erzeugt.
 5. Der Ordner enthielt:
    - Anschreiben als TXT
    - DOCX
@@ -149,7 +149,7 @@ Der Fall zeigt den eigentlichen Kernwert des Projekts:
 
 ## Projektstatus
 
-Das Projekt ist funktional und wird produktiv fuer die eigene Bewerbungsarbeit genutzt.
+Das Projekt ist funktional und wird produktiv für die eigene Bewerbungsarbeit genutzt.
 
 Bereits vorhanden:
 
@@ -157,11 +157,11 @@ Bereits vorhanden:
 - Firmenportal-Schicht
 - LLM-Scoring
 - Retrieval-/Embedding-Kontext
-- Feedback-Loop fuer spaetere Ranking-Signale
+- Feedback-Loop für spätere Ranking-Signale
 - Review-UI
 - UI-getriggerte Bewerbungsordner-Generierung
 - Status-Tracking
-- Kontaktablage fuer manuell gewonnene Kontakte
+- Kontaktablage für manuell gewonnene Kontakte
 
 Noch bewusst nicht perfekt:
 
@@ -169,7 +169,7 @@ Noch bewusst nicht perfekt:
 - Anti-Bot / Captcha verhindert Vollautomation
 - einzelne Datenquellen und Textpfade brauchen noch weiteres Polishing
 - manche Jobboards sollten noch konsequenter nur als Discovery behandelt werden
-- semantische Job-Aehnlichkeit ist jetzt als erster Layer vorhanden, aber noch bewusst nicht fuer automatisches Merge freigeschaltet
+- semantische Job-Ähnlichkeit ist jetzt als erster Layer vorhanden, aber noch bewusst nicht für automatisches Merge freigeschaltet
 
 ## Quickstart
 
@@ -184,7 +184,7 @@ pip install -r requirements.txt
 ### 2. Konfiguration
 
 - `.env.example` nach `.env` kopieren
-- benoetigte Keys und Pfade eintragen
+- benötigte Keys und Pfade eintragen
 
 ### 3. Pipeline
 
@@ -201,7 +201,7 @@ Der Standardlauf geht bis zur lokalen Review-UI:
 - Start des lokalen Present-Servers
 - Browser-Start auf `http://127.0.0.1:8765`
 
-`--step` ist nur noch fuer gezielte Teilruns gedacht, z. B. Debugging oder schnellere Einzeltests.
+`--step` ist nur noch für gezielte Teilruns gedacht, z. B. Debugging oder schnellere Einzeltests.
 
 ### 4. Review-UI separat starten
 
@@ -210,7 +210,7 @@ cd source
 ..\.venv\Scripts\python.exe .\present_server.py
 ```
 
-Der manuelle UI-Start ist nur noch noetig, wenn du die UI getrennt von `main.py` starten willst.
+Der manuelle UI-Start ist nur noch nötig, wenn du die UI getrennt von `main.py` starten willst.
 
 Dann im Browser:
 
@@ -251,7 +251,7 @@ Die Suchbegriffe kommen nicht mehr nur aus einer festen Liste, sondern aus einem
 
 ## Empfohlene Screenshots
 
-Fuer die Portfolio-Fassung eignen sich besonders:
+Für die Portfolio-Fassung eignen sich besonders:
 
 - `screenshots/01_present_ui_overview.png`
 - `screenshots/02_review_action_flow.png`
@@ -280,31 +280,31 @@ Fuer die Portfolio-Fassung eignen sich besonders:
 - Selenium
 - OpenRouter / LLM scoring
 - lokale Web-UI
-- lokaler Vector-Store + Embedding-Provider-Unterstuetzung
+- lokaler Vector-Store + Embedding-Provider-Unterstützung
 - JSON-basierter Pipeline-State
 
 ## Validation
 
-Typische Checks waehrend der Entwicklung:
+Typische Checks während der Entwicklung:
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover tests
 .\.venv\Scripts\python.exe -m compileall source
 ```
 
-Fuer einen realen Produktlauf:
+Für einen realen Produktlauf:
 
 ```powershell
 .\.venv\Scripts\python.exe source\main.py
 ```
 
-Der Standardlauf fuehrt bis zur Review-UI und startet anschliessend den lokalen Server im Browser.
+Der Standardlauf führt bis zur Review-UI und startet anschließend den lokalen Server im Browser.
 
 ## Grenzen
 
-- Keine vollzuverlaessige automatische Bewerbung ueber alle Quellen
-- Anti-Bot-Massnahmen und Captcha bleiben reale Grenzen
-- Manche Quellen eignen sich nur fuer Discovery, nicht fuer den finalen Apply-Link
-- Semantische Embeddings werden derzeit fuer Retrieval-Kontext genutzt, noch nicht fuer echte Job-gegen-Job-Dedupe
+- Keine vollzuverlässige automatische Bewerbung über alle Quellen
+- Anti-Bot-Maßnahmen und Captcha bleiben reale Grenzen
+- Manche Quellen eignen sich nur für Discovery, nicht für den finalen Apply-Link
+- Semantische Embeddings werden derzeit für Retrieval-Kontext genutzt, noch nicht für echte Job-gegen-Job-Dedupe
 
-Gerade diese Einschraenkungen waren aber zentral fuer die Architekturentwicklung des Projekts.
+Gerade diese Einschränkungen waren aber zentral für die Architekturentwicklung des Projekts.
